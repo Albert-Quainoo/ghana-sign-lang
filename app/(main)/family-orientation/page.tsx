@@ -4,9 +4,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Heart, Users, Sparkles, ChevronRight, BookOpen, Video } from "lucide-react"
+import { Heart, Sparkles, BookOpen, Video } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
-import { cn } from "@/lib/utils"
 
 // Fallback Texts
 const fallbacks = {

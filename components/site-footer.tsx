@@ -4,9 +4,8 @@ import Link from "next/link"
 import { Headphones } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { cn } from "@/lib/utils"
-import { useState, useEffect } from "react"
 import { HydrationFix } from "@/components/hydration-fix" // Assuming this exists and works by just wrapping children
-
+import { useState } from "react"
 // Icon components (assuming definition exists)
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg {...props} role="img" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Facebook</title><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg> )
 const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg {...props} role="img" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Twitter</title><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg> )
@@ -14,7 +13,7 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg {...props
 
 export function SiteFooter({ className }: { className?: string }) {
   const { t, isLoading } = useLanguage()
-  const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear())
+  const [currentYear] = useState<number>(new Date().getFullYear())
 
   return (
     <footer className={cn("border-t border-border/40 bg-background", className)}>

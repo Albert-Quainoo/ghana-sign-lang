@@ -1,6 +1,4 @@
 import type React from "react"
-import { Suspense } from "react"
-import Loading from "../loading"
 
 export default function MainLayout({
   children,

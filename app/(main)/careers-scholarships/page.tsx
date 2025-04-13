@@ -3,10 +3,9 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Briefcase, GraduationCap, ChevronRight } from "lucide-react" // Removed unused icons
+import { ChevronRight } from "lucide-react" // Removed unused icons
 import { useLanguage } from "@/contexts/language-context"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
 
 // Fallback Texts specific to this page
 const fallbacks = {

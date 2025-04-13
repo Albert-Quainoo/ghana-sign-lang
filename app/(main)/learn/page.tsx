@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Search, Video, Play, ChevronRight, Sparkles, MessageSquare, Users, Award, CheckCircle, Lock, Star, BarChart, Clock, Zap } from "lucide-react";
+import { BookOpen, Search, Video, CheckCircle, Lock, Star, BarChart, Clock, Zap, MessageSquare, Sparkles } from "lucide-react"; // Removed unused icons
 import { useLanguage } from "@/contexts/language-context";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +73,39 @@ interface CourseModule {
     lessons: CourseLesson[];
 }
 
+// --- Data Definitions Moved Outside Component ---
+const courseModules: CourseModule[] = [
+     { id: 1, title: "GSL Fundamentals", description: "Master the basics of Ghanaian Sign Language", level: "Beginner", duration: "4 weeks", lessonsCount: 4, progress: 25, image: "/placeholder.svg?height=200&width=350", alt: "GSL Fundamentals course thumbnail", lessons: [
+         { id: 1, title: "Introduction to GSL", description: "Learn about the history and importance of Ghanaian Sign Language", duration: "15 min", type: "video", completed: true, locked: false },
+         { id: 2, title: "Basic Greetings", description: "Learn how to say hello, goodbye, and introduce yourself", duration: "20 min", type: "interactive", completed: false, locked: false },
+         { id: 3, title: "Numbers 1-10", description: "Master counting from one to ten in GSL", duration: "25 min", type: "practice", completed: false, locked: true },
+         { id: 4, title: "Family Signs", description: "Learn signs for family members", duration: "30 min", type: "video", completed: false, locked: true },
+     ] },
+      { id: 2, title: "Everyday Conversations", description: "Learn to communicate in common daily situations", level: "Beginner", duration: "6 weeks", lessonsCount: 2, progress: 0, image: "/placeholder.svg?height=200&width=350", alt: "Everyday Conversations course thumbnail", lessons: [
+         { id: 1, title: "Asking Questions", description: "Learn how to form questions in GSL", duration: "25 min", type: "interactive", completed: false, locked: false },
+         { id: 2, title: "Shopping Vocabulary", description: "Essential signs for shopping and transactions", duration: "30 min", type: "video", completed: false, locked: true },
+     ] },
+     // Add other modules...
+];
+const lessons: LessonLevels = {
+      beginner: [
+        { id: 1, titleKey: "learn.lessons.beginner.1.title", descriptionKey: "learn.lessons.beginner.1.description", durationKey: "learn.lessons.beginner.1.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.beginner.1.alt" },
+        { id: 2, titleKey: "learn.lessons.beginner.2.title", descriptionKey: "learn.lessons.beginner.2.description", durationKey: "learn.lessons.beginner.2.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.beginner.2.alt" },
+        { id: 3, titleKey: "learn.lessons.beginner.3.title", descriptionKey: "learn.lessons.beginner.3.description", durationKey: "learn.lessons.beginner.3.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.beginner.3.alt" },
+      ],
+      intermediate: [
+         { id: 7, titleKey: "learn.lessons.intermediate.7.title", descriptionKey: "learn.lessons.intermediate.7.description", durationKey: "learn.lessons.intermediate.7.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.intermediate.7.alt" },
+      ],
+      advanced: [],
+};
+const practiceItems: PracticeItem[] = [
+     { id: 1, titleKey: "learn.practice.1.title", descriptionKey: "learn.practice.1.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.practice.1.alt" },
+     { id: 2, titleKey: "learn.practice.2.title", descriptionKey: "learn.practice.2.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.practice.2.alt" },
+];
+const resources: Resource[] = [
+     { id: 2, titleKey: "learn.resources.community.title", descriptionKey: "learn.resources.community.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.resources.community.alt", href: "/forum", buttonTextKey: "learn.resources.community.button", icon: MessageSquare },
+     { id: 3, titleKey: "learn.resources.video.title", descriptionKey: "learn.resources.video.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.resources.video.alt", href: "/videos", buttonTextKey: "learn.resources.video.button", icon: Video },
+];
 const mockDictionarySigns: Record<string, DictionarySignData> = {
   hello: { definitionKey: "dictionary.hello.definition", image: "/placeholder.svg?height=100&width=100&text=Hello" },
   thank: { definitionKey: "dictionary.thank.definition", image: "/placeholder.svg?height=100&width=100&text=Thank" },
@@ -83,6 +116,7 @@ const mockDictionarySigns: Record<string, DictionarySignData> = {
   sign: { definitionKey: "dictionary.sign.definition", image: "/placeholder.svg?height=100&width=100&text=Sign" },
   language: { definitionKey: "dictionary.language.definition", image: "/placeholder.svg?height=100&width=100&text=Language" },
 };
+// --- End Data Definitions ---
 
 export default function LearnPage() {
   const { t, isLoading } = useLanguage();
@@ -144,7 +178,6 @@ export default function LearnPage() {
       interactiveImageAlt: "Interactive practice interface",
   };
 
-
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
@@ -175,47 +208,11 @@ export default function LearnPage() {
     });
   };
 
-  // --- DATA ---
-  const courseModules: CourseModule[] = [
-     { id: 1, title: "GSL Fundamentals", description: "Master the basics...", level: "Beginner", duration: "4 weeks", lessonsCount: 4, progress: 25, image: "/placeholder.svg?height=200&width=350", alt: "GSL Fundamentals", lessons: [
-         { id: 1, title: "Introduction to GSL", description: "Learn about history...", duration: "15 min", type: "video", completed: true, locked: false },
-         { id: 2, title: "Basic Greetings", description: "Learn hello, goodbye...", duration: "20 min", type: "interactive", completed: false, locked: false },
-         { id: 3, title: "Numbers 1-10", description: "Master counting...", duration: "25 min", type: "practice", completed: false, locked: true },
-         { id: 4, title: "Family Signs", description: "Learn family members...", duration: "30 min", type: "video", completed: false, locked: true },
-     ] },
-      { id: 2, title: "Everyday Conversations", description: "Communicate in daily situations", level: "Beginner", duration: "6 weeks", lessonsCount: 2, progress: 0, image: "/placeholder.svg?height=200&width=350", alt: "Everyday Conversations", lessons: [
-         { id: 1, title: "Asking Questions", description: "Form questions in GSL", duration: "25 min", type: "interactive", completed: false, locked: false },
-         { id: 2, title: "Shopping Vocabulary", description: "Signs for shopping", duration: "30 min", type: "video", completed: false, locked: true },
-     ] },
-     // Add other modules...
-   ];
-  const lessons: LessonLevels = {
-      beginner: [
-        { id: 1, titleKey: "learn.lessons.beginner.1.title", descriptionKey: "learn.lessons.beginner.1.description", durationKey: "learn.lessons.beginner.1.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.beginner.1.alt" },
-        { id: 2, titleKey: "learn.lessons.beginner.2.title", descriptionKey: "learn.lessons.beginner.2.description", durationKey: "learn.lessons.beginner.2.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.beginner.2.alt" },
-        { id: 3, titleKey: "learn.lessons.beginner.3.title", descriptionKey: "learn.lessons.beginner.3.description", durationKey: "learn.lessons.beginner.3.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.beginner.3.alt" },
-      ],
-      intermediate: [
-         { id: 7, titleKey: "learn.lessons.intermediate.7.title", descriptionKey: "learn.lessons.intermediate.7.description", durationKey: "learn.lessons.intermediate.7.duration", image: "/placeholder.svg?height=200&width=350", altKey: "learn.lessons.intermediate.7.alt" },
-      ],
-      advanced: [],
-   };
-  const practiceItems: PracticeItem[] = [
-     { id: 1, titleKey: "learn.practice.1.title", descriptionKey: "learn.practice.1.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.practice.1.alt" },
-     { id: 2, titleKey: "learn.practice.2.title", descriptionKey: "learn.practice.2.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.practice.2.alt" },
-   ];
-  const resources: Resource[] = [
-     { id: 2, titleKey: "learn.resources.community.title", descriptionKey: "learn.resources.community.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.resources.community.alt", href: "/forum", buttonTextKey: "learn.resources.community.button", icon: MessageSquare },
-     { id: 3, titleKey: "learn.resources.video.title", descriptionKey: "learn.resources.video.description", image: "/placeholder.svg?height=200&width=350", altKey: "learn.resources.video.alt", href: "/videos", buttonTextKey: "learn.resources.video.button", icon: Video },
-   ];
-  // --- End Data ---
-
-
   const filteredCourseModules = useMemo(() => {
       if (!globalSearchTerm) return courseModules;
       const lowerSearch = globalSearchTerm.toLowerCase();
       return courseModules.filter(module => module.title.toLowerCase().includes(lowerSearch) || module.description.toLowerCase().includes(lowerSearch) || module.level.toLowerCase().includes(lowerSearch) || module.lessons.some(lesson => lesson.title.toLowerCase().includes(lowerSearch) || lesson.description.toLowerCase().includes(lowerSearch) ));
-  }, [globalSearchTerm, courseModules]);
+  }, [globalSearchTerm]); // Removed courseModules as it's defined outside
 
   const filteredIndividualLessons = useMemo(() => {
       if (!globalSearchTerm) return lessons;
@@ -223,19 +220,19 @@ export default function LearnPage() {
       const filtered: LessonLevels = { beginner: [], intermediate: [], advanced: [] };
       for (const level in lessons) { const key = level as keyof LessonLevels; filtered[key] = lessons[key].filter(lesson => (t(lesson.titleKey) ?? '').toLowerCase().includes(lowerSearch) || (t(lesson.descriptionKey) ?? '').toLowerCase().includes(lowerSearch)); }
       return filtered;
-  }, [globalSearchTerm, lessons, t]);
+  }, [globalSearchTerm, t]); // Removed lessons as it's defined outside
 
    const filteredPracticeItems = useMemo(() => {
        if (!globalSearchTerm) return practiceItems;
        const lowerSearch = globalSearchTerm.toLowerCase();
        return practiceItems.filter(item => (t(item.titleKey) ?? '').toLowerCase().includes(lowerSearch) || (t(item.descriptionKey) ?? '').toLowerCase().includes(lowerSearch) );
-   }, [globalSearchTerm, practiceItems, t]);
+   }, [globalSearchTerm, t]); // Removed practiceItems as it's defined outside
 
    const filteredResources = useMemo(() => {
        if (!globalSearchTerm) return resources;
        const lowerSearch = globalSearchTerm.toLowerCase();
        return resources.filter(resource => (t(resource.titleKey) ?? '').toLowerCase().includes(lowerSearch) || (t(resource.descriptionKey) ?? '').toLowerCase().includes(lowerSearch));
-   }, [globalSearchTerm, resources, t]);
+   }, [globalSearchTerm, t]); // Removed resources as it's defined outside
 
   const filteredDictionarySigns = useMemo(() => {
     const lowerSearch = dictionarySearchTerm.toLowerCase();
@@ -284,55 +281,27 @@ export default function LearnPage() {
 
   return (
     <>
-    {/* Hero Section */}
-    <section className="section-padding hero-bg">
-        {/* Optional: Background blobs */}
+      <section className="section-padding hero-bg">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-
         <div className="container px-4 md:px-6 relative max-w-screen-xl mx-auto">
-          {/* Main container: Vertical stacking and centering */}
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
-
-              {/* Badge: Styled correctly and will stack above H1 */}
-              <div className="inline-flex items-center justify-center p-1 rounded-full bg-pink-100 text-pink-700"> {/* Main badge styles */}
-                <div className="rounded-full bg-white p-1"> {/* White circle */}
-                  <BookOpen className="h-4 w-4 text-pink-600" /> {/* Icon with color */}
-                </div>
-                <span className="ml-2 mr-3 text-sm font-medium"> {/* Text */}
-                  {isLoading ? fallbacks.heroBadge : <span suppressHydrationWarning>{t("learn.hero.badge") ?? fallbacks.heroBadge}</span>}
-                </span>
-              </div>
-
-              {/* Heading */}
-              <h1 className="heading-1 gradient-text-hero w-full">
-                {isLoading ? fallbacks.heroTitle : <span suppressHydrationWarning>{t("learn.hero.title") ?? fallbacks.heroTitle}</span>}
-              </h1>
-
-              {/* Subtitle */}
-              <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl/relaxed text-enhanced w-full">
-                {isLoading ? fallbacks.heroSubtitle : <span suppressHydrationWarning>{t("learn.hero.subtitle") ?? fallbacks.heroSubtitle}</span>}
-              </p>
-
-            {/* Search Bar Container */}
+            <div className="inline-flex items-center justify-center p-1 rounded-full bg-pink-100 text-pink-700">
+                <div className="rounded-full bg-white p-1"><BookOpen className="h-4 w-4 text-pink-600"/></div>
+                <span className="ml-2 mr-3 text-sm font-medium">{isLoading ? fallbacks.heroBadge : <span suppressHydrationWarning>{t("learn.hero.badge") ?? fallbacks.heroBadge}</span>}</span>
+            </div>
+            <h1 className="heading-1 gradient-text-hero w-full">{isLoading ? fallbacks.heroTitle : <span suppressHydrationWarning>{t("learn.hero.title") ?? fallbacks.heroTitle}</span>}</h1>
+            <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl/relaxed text-enhanced w-full">{isLoading ? fallbacks.heroSubtitle : <span suppressHydrationWarning>{t("learn.hero.subtitle") ?? fallbacks.heroSubtitle}</span>}</p>
             <div className="w-full max-w-md pt-4">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder={isLoading ? fallbacks.heroSearchPlaceholder : t("learn.hero.searchPlaceholder") ?? fallbacks.heroSearchPlaceholder}
-                        className="w-full rounded-lg border border-input bg-background pl-9 pr-4 py-2 text-sm h-10"
-                        aria-label={isLoading ? fallbacks.searchAriaLabel : t("learn.hero.searchAriaLabel") ?? fallbacks.searchAriaLabel}
-                        value={globalSearchTerm}
-                        onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                    />
-              </div>
+                    <Input type="search" placeholder={isLoading ? fallbacks.heroSearchPlaceholder : t("learn.hero.searchPlaceholder") ?? fallbacks.heroSearchPlaceholder} className="w-full rounded-lg border border-input bg-background pl-9 pr-4 py-2 text-sm h-10" aria-label={isLoading ? fallbacks.searchAriaLabel : t("learn.hero.searchAriaLabel") ?? fallbacks.searchAriaLabel} value={globalSearchTerm} onChange={(e) => setGlobalSearchTerm(e.target.value)} />
+               </div>
             </div>
-
-          </div> {/* End of main flex container */}
+          </div>
         </div>
       </section>
-      
+
       <section className="section-padding content-bg-1">
          <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" data-orientation="horizontal">
@@ -391,7 +360,7 @@ export default function LearnPage() {
                                           </CardFooter>
                                       </Card>
                                   ))}
-                                 {filteredCourseModules.length === 0 && globalSearchTerm && ( <p className="text-muted-foreground text-enhanced col-span-full text-center">No course modules found matching "{globalSearchTerm}".</p> )}
+                                 {filteredCourseModules.length === 0 && globalSearchTerm && ( <p className="text-muted-foreground text-enhanced col-span-full text-center">{`No course modules found matching "${globalSearchTerm}".`}</p> )}
                              </div>
                          </TabsContent>
                          <TabsContent value="individual">
@@ -499,7 +468,7 @@ export default function LearnPage() {
                                 </CardFooter>
                              </Card>
                           ))}
-                         {filteredResources.length === 0 && globalSearchTerm && ( <p className="text-muted-foreground text-enhanced col-span-full text-center"> No resources found matching "{globalSearchTerm}". </p> )}
+                         {filteredResources.length === 0 && globalSearchTerm && ( <p className="text-muted-foreground text-enhanced col-span-full text-center"> {`No resources found matching "${globalSearchTerm}".`} </p> )}
                      </div>
                  </TabsContent>
 
@@ -539,7 +508,7 @@ export default function LearnPage() {
           <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
             <div className="space-y-4">
               <div className="inline-flex items-center justify-center p-1 rounded-full bg-pink-100 text-pink-700 mb-4">
-                <div className="rounded-full bg-white p-1"><Sparkles className="h-4 w-4" /></div>
+                <div className="rounded-full bg-white p-1"><Sparkles className="h-4 w-4 text-pink-600"/></div>
                 <span className="ml-2 mr-3 text-sm font-medium">{isLoading ? fallbacks.interactiveBadge : <span suppressHydrationWarning>{t("learn.interactive.badge") ?? fallbacks.interactiveBadge}</span>}</span>
               </div>
               <h2 className="heading-2 gradient-text-heading">{isLoading ? fallbacks.interactiveTitle : <span suppressHydrationWarning>{t("learn.interactive.title") ?? fallbacks.interactiveTitle}</span>}</h2>

@@ -1,11 +1,8 @@
 "use client"
-
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Heart, Users, Sparkles, ChevronRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
-import { cn } from "@/lib/utils"
 
 export default function AboutPage() {
   const { t } = useLanguage()

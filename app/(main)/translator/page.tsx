@@ -1,4 +1,3 @@
-
 "use client"
 
 import type React from "react"
@@ -8,7 +7,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Heart, Languages, Send, RefreshCw, ChevronRight, Volume2, Eye, EyeOff, Mic, BookOpen, Users, Sparkles } from "lucide-react"
+import { Languages, Send, RefreshCw, ChevronRight, Volume2, Eye, EyeOff, BookOpen, Users, Sparkles } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { cn } from "@/lib/utils"
 

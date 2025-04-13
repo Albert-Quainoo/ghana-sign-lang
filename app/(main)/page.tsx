@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { ChevronRight, BookOpen, Users, Briefcase, Headphones } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
-import { cn } from "@/lib/utils"
+
 
 
 const fallbacks = {
@@ -77,8 +77,6 @@ export default function Home() {
     { id: 3, icon: Briefcase, titleKey: "home.steps.career.title", descriptionKey: "home.steps.career.description", longDescriptionKey: "home.steps.career.longDescription", linkTextKey: "home.steps.career.cta", linkHref: "/careers-scholarships", fallbackTitle: fallbacks.stepsCareerTitle, fallbackDesc: fallbacks.stepsCareerDescription, fallbackLongDesc: fallbacks.stepsCareerLongDescription, fallbackLinkText: fallbacks.stepsCareerCta }
   ];
 
-  // Testimonials remain static in this example, translate if needed
-  const testimonials = [ /* ... as before ... */ ];
 
   return (
     <>

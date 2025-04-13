@@ -2,13 +2,12 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MessageSquare, Users, BookOpen, Search, PlusCircle, ThumbsUp, MessageCircle as MessageIcon, Clock, Filter, ChevronRight, Volume2, Eye, EyeOff } from "lucide-react" // Removed Mic
+import { MessageSquare, Users, BookOpen, Search, PlusCircle, ThumbsUp, MessageCircle as MessageIcon, Clock, Filter, ChevronRight, Volume2, Eye} from "lucide-react" // Removed Mic
 import { useLanguage } from "@/contexts/language-context"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -100,7 +99,7 @@ export default function MessageBoardPage() {
   const { t, isLoading } = useLanguage(); // Use hook
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [filteredDiscussions, setFilteredDiscussions] = useState(mockDiscussions)
+  const [filteredDiscussions] = useState(mockDiscussions)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent")
