@@ -1,13 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card" // Removed unused Card sub-components
+import { Card, CardContent } from "@/components/ui/card" 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, Phone, MapPin } from "lucide-react" // Removed Heart
+import { Mail, Phone, MapPin } from "lucide-react" 
 import { useLanguage } from "@/contexts/language-context"
-import { cn } from "@/lib/utils" // Keep cn
 
 // Fallback Texts
 const fallbacks = {

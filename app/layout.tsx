@@ -8,8 +8,7 @@ import { ScrollToTop } from "@/components/scroll-to-top"
 import { LanguageProvider } from "@/contexts/language-context"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { Suspense } from "react"
-import Loading from "./loading"
+
 
 const inter = Inter({ subsets: ["latin"] })
 
