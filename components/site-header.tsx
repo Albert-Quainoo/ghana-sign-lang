@@ -256,29 +256,43 @@ export function SiteHeader({ className }: { className?: string }) {
          </div>
       </div>
 
-       {/* Mobile Menu */}
+      {/* Mobile Menu with Expandable Sections */}
        {mobileMenuOpen && (
          <div className="md:hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-md animate-in slide-in-from-top-3 duration-300">
            <nav className="grid gap-1 p-4">
              {navItems.map((item) => (
-               <div key={item.key} className="w-full">
+               <div key={item.key} className="w-full relative">
                  {item.hasDropdown ? (
                    <>
-                     <div className={cn( /* Styles */ "flex items-center justify-between w-full rounded-md p-2 text-sm font-medium hover:bg-accent/50 cursor-pointer", isActive(item.href) ? "text-pink-600 font-semibold" : "text-muted-foreground", )} onClick={() => toggleDropdown(item.key)}>
+                     {/* Button to trigger the dropdown */}
+                     <button // Changed from div to button for better semantics
+                       className={cn(
+                         "flex items-center justify-between w-full rounded-md p-2 text-sm font-medium hover:bg-accent/50 cursor-pointer text-left", // Added text-left
+                         isActive(item.href) ? "text-pink-600 font-semibold" : "text-muted-foreground",
+                       )}
+                       onClick={() => toggleDropdown(item.key)} 
+                       aria-expanded={activeDropdown === item.key}
+                     >
                        <div className="flex items-center">
                          <item.icon className="h-4 w-4 mr-2 text-pink-500/70" />
-                         {/* Render label directly from state */}
-                         <span>{item.label}</span>
+                         <span suppressHydrationWarning>{item.label}</span>
                        </div>
-                       <ChevronDown className={cn("h-4 w-4 transition-transform", activeDropdown === item.key && "transform rotate-180")} />
-                     </div>
+                       <ChevronDown className={cn( "h-4 w-4 transition-transform", activeDropdown === item.key && "transform rotate-180" )} />
+                     </button>
+
+                     {/* Dropdown content */}
                      {activeDropdown === item.key && item.dropdown && (
-                       <div className="pl-4 pr-2 py-1 space-y-1 border-l-2 border-border/40 ml-2 mt-1">
+
+                       <div className="pl-6 pr-2 py-1 space-y-1 border-l-2 border-border/40 ml-2 mt-1 bg-background rounded-md shadow-sm"> {/* Added background/rounding/shadow */}
                          {item.dropdown.map((dropdownItem, idx) => (
-                           <Link key={idx} href={dropdownItem.href} className="flex flex-col w-full rounded-md px-3 py-2 text-sm hover:bg-accent/50" onClick={(e) => handleSmoothScrollLink(e, dropdownItem.href)}>
-                             {/* Render dropdown labels directly from state */}
-                             <span className="font-medium">{dropdownItem.label}</span>
-                             <span className="text-xs text-muted-foreground">{dropdownItem.description}</span>
+                           <Link
+                             key={idx}
+                             href={dropdownItem.href}
+                             className="flex flex-col w-full rounded-md px-3 py-2 text-sm hover:bg-accent/50"
+                             onClick={(e) => handleSmoothScrollLink(e, dropdownItem.href)} // Close menus on click
+                           >
+                             <span className="font-medium" suppressHydrationWarning>{dropdownItem.label}</span>
+                             <span className="text-xs text-muted-foreground" suppressHydrationWarning>{dropdownItem.description}</span>
                            </Link>
                          ))}
                        </div>

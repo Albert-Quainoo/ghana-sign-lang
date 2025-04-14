@@ -1,15 +1,11 @@
+// --- START OF FILE app/api/translate/route.ts ---
+
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import NodeCache from 'node-cache'; // Import node-cache
 
-// --- Define expected Azure response structure ---
-interface AzureTranslationResultItem {
-  translations?: {
-    text: string;
-    to: string;
-  }[];
-  
-}
-
+const translationCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
+// --- End Cache Initialization ---
 
 
 // Azure Credentials & Custom Model ID
@@ -18,13 +14,18 @@ const azureEndpoint = process.env.AZURE_TRANSLATOR_ENDPOINT;
 const azureLocation = process.env.AZURE_TRANSLATOR_REGION;
 const twiCustomCategoryID = process.env.AZURE_CUSTOM_TWI_CATEGORY_ID;
 
+// Initial check for essential config
 if (!azureSubscriptionKey || !azureEndpoint || !azureLocation) {
-    console.error("Azure Translator environment variables (KEY, ENDPOINT, REGION) are not set.");
+    console.error("CRITICAL: Azure Translator environment variables (KEY, ENDPOINT, REGION) are not set.");
 }
 if (!twiCustomCategoryID) {
-     console.warn("AZURE_CUSTOM_TWI_CATEGORY_ID is not set. Twi translation will attempt to use the Azure general model if supported, or may fail.");
+     console.warn("AZURE_CUSTOM_TWI_CATEGORY_ID is not set. Twi translation will attempt general model.");
 }
 
+// Define expected Azure response structure
+interface AzureTranslationResultItem {
+  translations?: { text: string; to: string; }[];
+}
 
 export async function POST(request: NextRequest) {
     if (!azureSubscriptionKey || !azureEndpoint || !azureLocation) {
@@ -37,20 +38,34 @@ export async function POST(request: NextRequest) {
         const sourceLanguage = 'en';
 
         if (!texts || typeof texts !== 'object' || Object.keys(texts).length === 0 || !targetLanguage) {
-            return NextResponse.json({ error: 'Invalid request body: Missing or invalid texts object or targetLanguage' }, { status: 400 });
+            return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
         }
 
         const supportedLanguages = ['en', 'fr', 'es', 'ar', 'tw'];
         if (!supportedLanguages.includes(targetLanguage)) {
-             console.warn(`Unsupported target language requested: ${targetLanguage}`);
              return NextResponse.json({ error: `Unsupported target language: ${targetLanguage}` }, { status: 400 });
         }
 
         if (targetLanguage === 'en') {
-            console.log("Target is English, returning original texts.");
-            return NextResponse.json(texts);
+            return NextResponse.json(texts); // No translation needed
         }
 
+        // --- Check Server-Side Cache ---
+        const cacheKey = `translation_${sourceLanguage}_${targetLanguage}`;
+        const cachedResult = translationCache.get<Record<string, string>>(cacheKey);
+        if (cachedResult) {
+            console.log(`Returning cached result for ${targetLanguage}`);
+            // Optional: Still set CDN caching headers for cached responses
+             const responseHeaders = new Headers();
+             responseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
+             responseHeaders.set('CDN-Cache-Control', 'public, max-age=3600, s-maxage=3600');
+            return NextResponse.json(cachedResult, { headers: responseHeaders });
+        }
+        // --- End Cache Check ---
+
+
+        // --- If not cached, proceed with Azure API Call ---
+        console.log(`Cache miss for ${targetLanguage}. Calling Azure API...`);
         const sourceKeys = Object.keys(texts);
         const requestBody = Object.values(texts).map(textValue => ({ Text: String(textValue) }));
 
@@ -62,9 +77,9 @@ export async function POST(request: NextRequest) {
 
         if (targetLanguage === 'tw' && twiCustomCategoryID) {
             params.append('category', twiCustomCategoryID);
-            console.log(`Using Azure Custom Translator category ${twiCustomCategoryID} for Twi.`);
-        } else if (targetLanguage === 'tw' && !twiCustomCategoryID) {
-             console.warn("Attempting Twi translation with Azure's general model as AZURE_CUSTOM_TWI_CATEGORY_ID is not set.");
+            console.log(`Using Azure Custom Category ${twiCustomCategoryID} for Twi.`);
+        } else if (targetLanguage === 'tw') {
+             console.warn("Attempting Twi translation with Azure's general model (no Category ID).");
         }
 
         const translateUrl = `${azureEndpoint}translate?${params.toString()}`;
@@ -75,42 +90,48 @@ export async function POST(request: NextRequest) {
             'X-ClientTraceId': uuidv4().toString()
         };
 
-        console.log(`Translating to ${targetLanguage} via Azure...`);
         const azureResponse = await fetch(translateUrl, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(requestBody),
+            method: 'POST', headers: headers, body: JSON.stringify(requestBody),
         });
 
         let translatedObject: Record<string, string> = {};
+        let translationSuccessful = false; // Flag to check if we should cache
 
         if (!azureResponse.ok) {
             const errorStatus = azureResponse.status;
             const errorText = await azureResponse.text();
             console.error(`Azure API Error (${errorStatus}) for lang ${targetLanguage}: ${errorText}`);
             if (errorStatus === 429) { console.warn(`Azure Rate Limit hit for ${targetLanguage}.`); }
-            else if (errorText.includes("400036")) { console.warn(`Azure reports target language ${targetLanguage} is invalid.`); }
-            else if (errorText.includes("400077")) { console.error(`Azure Error: Invalid Custom Translator Category ID '${twiCustomCategoryID}'.`); }
-            console.warn(`Azure translation failed for ${targetLanguage}, falling back to English texts.`);
+             // Fallback to English on error
             translatedObject = texts;
+            translationSuccessful = false; // Don't cache the fallback
         } else {
             const azureResult = await azureResponse.json();
-            // --- Use type assertion and typed forEach ---
             const typedAzureResult = azureResult as AzureTranslationResultItem[];
 
             if (!Array.isArray(typedAzureResult) || typedAzureResult.length !== requestBody.length) {
                console.error('Mismatch between request and Azure result count');
-               translatedObject = texts;
+               translatedObject = texts; // Fallback
+               translationSuccessful = false;
             } else {
                 typedAzureResult.forEach((item: AzureTranslationResultItem, index: number) => {
                     const originalKey = sourceKeys[index];
                     translatedObject[originalKey] = item?.translations?.[0]?.text ?? texts[originalKey];
                 });
+                translationSuccessful = true; // Mark as successful
             }
-            // --- End type fix ---
         }
-        console.log(`Azure translation to ${targetLanguage} complete (or fell back).`);
+        console.log(`Azure translation fetch for ${targetLanguage} complete (Success: ${translationSuccessful}).`);
 
+        // --- Store in Server-Side Cache ONLY if successful ---
+        if (translationSuccessful) {
+            translationCache.set(cacheKey, translatedObject);
+            console.log(`Stored result for ${targetLanguage} in server cache.`);
+        }
+        // --- End Cache Store ---
+
+
+        // Set CDN/Browser caching headers
         const responseHeaders = new Headers();
         responseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
         responseHeaders.set('CDN-Cache-Control', 'public, max-age=3600, s-maxage=3600');
@@ -123,6 +144,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
+// GET handler
 export async function GET() {
   return NextResponse.json({ message: 'Azure Translate API route active. Use POST.' });
 }
