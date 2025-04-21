@@ -1,39 +1,57 @@
-// --- START OF FILE app/api/translate/route.ts ---
-
 import { NextRequest, NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
-import NodeCache from 'node-cache'; // Import node-cache
+import NodeCache from 'node-cache';
 
-const translationCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
-// --- End Cache Initialization ---
+// Cache Initialization
+const translationCache = new NodeCache({ stdTTL: 21600, checkperiod: 3600 });
 
-
-// Azure Credentials & Custom Model ID
-const azureSubscriptionKey = process.env.AZURE_TRANSLATOR_KEY;
-const azureEndpoint = process.env.AZURE_TRANSLATOR_ENDPOINT;
-const azureLocation = process.env.AZURE_TRANSLATOR_REGION;
-const twiCustomCategoryID = process.env.AZURE_CUSTOM_TWI_CATEGORY_ID;
+// --- Google AI Gemini Configuration ---
+const googleApiKey = process.env.GOOGLE_AI_API_KEY;
+const geminiModelName = 'gemini-2.0-flash'; 
+const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${googleApiKey}`;
+// --- End Google AI Configuration ---
 
 // Initial check for essential config
-if (!azureSubscriptionKey || !azureEndpoint || !azureLocation) {
-    console.error("CRITICAL: Azure Translator environment variables (KEY, ENDPOINT, REGION) are not set.");
-}
-if (!twiCustomCategoryID) {
-     console.warn("AZURE_CUSTOM_TWI_CATEGORY_ID is not set. Twi translation will attempt general model.");
+if (!googleApiKey) {
+    console.error("CRITICAL: GOOGLE_AI_API_KEY environment variable is not set.");
 }
 
-// Define expected Azure response structure
-interface AzureTranslationResultItem {
-  translations?: { text: string; to: string; }[];
+// Define expected Gemini response structure
+interface GeminiPart { text: string; }
+interface GeminiContent { parts: GeminiPart[]; role: string; }
+interface GeminiCandidate { content: GeminiContent; finishReason: string; index: number; safetyRatings: any[]; }
+interface GeminiApiResponse { candidates: GeminiCandidate[]; promptFeedback?: any; error?: { code: number; message: string; status: string }; }
+
+// Function to build the prompt for Gemini
+function buildTranslationPrompt(sourceTexts: Record<string, string>, targetLangCode: string, sourceLangCode: string = 'en'): string {
+    const sourceJsonString = JSON.stringify(sourceTexts); // Use compact JSON for prompt
+
+    return `
+TASK: Translate the string values within the following JSON object from the source language "${sourceLangCode}" to the target language "${targetLangCode}".
+
+INSTRUCTIONS:
+1. Identify ALL string values in the INPUT JSON provided below.
+2. Translate ONLY these string values to the target language: ${targetLangCode}. Retain original HTML tags or placeholders like {{variable}} if present.
+3. Keep ALL original keys EXACTLY the same.
+4. Maintain the original JSON structure precisely.
+5. Output ONLY the complete, valid JSON object containing the translated values.
+6. DO NOT include any introductory text, explanations, concluding remarks, or markdown formatting like \`\`\`json before or after the JSON object in your response. Just the raw JSON.
+
+INPUT JSON:
+${sourceJsonString}
+
+TRANSLATED JSON OUTPUT:
+`;
 }
 
+// --- Main POST Handler ---
 export async function POST(request: NextRequest) {
-    if (!azureSubscriptionKey || !azureEndpoint || !azureLocation) {
+    if (!googleApiKey) {
         return NextResponse.json({ error: 'Translator service not configured on server.' }, { status: 500 });
     }
 
+    let body;
     try {
-        const body = await request.json();
+        body = await request.json();
         const { texts, targetLanguage } = body;
         const sourceLanguage = 'en';
 
@@ -47,104 +65,120 @@ export async function POST(request: NextRequest) {
         }
 
         if (targetLanguage === 'en') {
-            return NextResponse.json(texts); // No translation needed
+            return NextResponse.json(texts);
         }
 
         // --- Check Server-Side Cache ---
-        const cacheKey = `translation_${sourceLanguage}_${targetLanguage}`;
+        const cacheKey = `gemini_translation_${sourceLanguage}_${targetLanguage}`;
         const cachedResult = translationCache.get<Record<string, string>>(cacheKey);
         if (cachedResult) {
-            console.log(`Returning cached result for ${targetLanguage}`);
-            // Optional: Still set CDN caching headers for cached responses
-             const responseHeaders = new Headers();
-             responseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
-             responseHeaders.set('CDN-Cache-Control', 'public, max-age=3600, s-maxage=3600');
-            return NextResponse.json(cachedResult, { headers: responseHeaders });
+            console.log(`Returning cached Gemini result for ${targetLanguage}`);
+            const cacheHeaders = new Headers();
+            cacheHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+            cacheHeaders.set('X-Translation-Cache', 'HIT');
+            return NextResponse.json(cachedResult, { headers: cacheHeaders });
         }
         // --- End Cache Check ---
 
 
-        // --- If not cached, proceed with Azure API Call ---
-        console.log(`Cache miss for ${targetLanguage}. Calling Azure API...`);
-        const sourceKeys = Object.keys(texts);
-        const requestBody = Object.values(texts).map(textValue => ({ Text: String(textValue) }));
+        // --- Batching Logic ---
+        console.log(`Cache miss for ${targetLanguage}. Calling Gemini API in batches...`);
+        const sourceEntries = Object.entries(texts);
+        const batchSize = 40;
+        let finalTranslatedObject: Record<string, string> = {};
+        let overallSuccess = true;
 
-        const params = new URLSearchParams({
-            'api-version': '3.0',
-            'from': sourceLanguage,
-            'to': targetLanguage
-        });
+        for (let i = 0; i < sourceEntries.length; i += batchSize) {
+            const batchEntries = sourceEntries.slice(i, i + batchSize);
+            const batchSourceTexts = Object.fromEntries(
+                batchEntries.map(([k, v]) => [k, String(v)])
+            ) as Record<string, string>;
+            const batchNumber = Math.floor(i / batchSize) + 1;
 
-        if (targetLanguage === 'tw' && twiCustomCategoryID) {
-            params.append('category', twiCustomCategoryID);
-            console.log(`Using Azure Custom Category ${twiCustomCategoryID} for Twi.`);
-        } else if (targetLanguage === 'tw') {
-             console.warn("Attempting Twi translation with Azure's general model (no Category ID).");
-        }
+            console.log(`Processing batch ${batchNumber} for ${targetLanguage} (Keys ${i + 1}-${Math.min(i + batchSize, sourceEntries.length)})...`);
+            const prompt = buildTranslationPrompt(batchSourceTexts, targetLanguage, sourceLanguage);
+            const geminiRequestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
-        const translateUrl = `${azureEndpoint}translate?${params.toString()}`;
-        const headers = {
-            'Ocp-Apim-Subscription-Key': azureSubscriptionKey,
-            'Ocp-Apim-Subscription-Region': azureLocation,
-            'Content-type': 'application/json',
-            'X-ClientTraceId': uuidv4().toString()
-        };
-
-        const azureResponse = await fetch(translateUrl, {
-            method: 'POST', headers: headers, body: JSON.stringify(requestBody),
-        });
-
-        let translatedObject: Record<string, string> = {};
-        let translationSuccessful = false; // Flag to check if we should cache
-
-        if (!azureResponse.ok) {
-            const errorStatus = azureResponse.status;
-            const errorText = await azureResponse.text();
-            console.error(`Azure API Error (${errorStatus}) for lang ${targetLanguage}: ${errorText}`);
-            if (errorStatus === 429) { console.warn(`Azure Rate Limit hit for ${targetLanguage}.`); }
-             // Fallback to English on error
-            translatedObject = texts;
-            translationSuccessful = false; // Don't cache the fallback
-        } else {
-            const azureResult = await azureResponse.json();
-            const typedAzureResult = azureResult as AzureTranslationResultItem[];
-
-            if (!Array.isArray(typedAzureResult) || typedAzureResult.length !== requestBody.length) {
-               console.error('Mismatch between request and Azure result count');
-               translatedObject = texts; // Fallback
-               translationSuccessful = false;
-            } else {
-                typedAzureResult.forEach((item: AzureTranslationResultItem, index: number) => {
-                    const originalKey = sourceKeys[index];
-                    translatedObject[originalKey] = item?.translations?.[0]?.text ?? texts[originalKey];
+            try {
+                const geminiResponse = await fetch(geminiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(geminiRequestBody),
                 });
-                translationSuccessful = true; // Mark as successful
+
+                if (!geminiResponse.ok) {
+                    const errorStatus = geminiResponse.status;
+                    const errorData = await geminiResponse.json().catch(() => ({})); // Try to parse error, ignore if not JSON
+                    console.error(`Gemini API Error on batch ${batchNumber} (${errorStatus}) for lang ${targetLanguage}:`, JSON.stringify(errorData));
+                    if (errorStatus === 429) { console.warn(`Gemini Rate Limit hit on batch ${batchNumber} for ${targetLanguage}.`); }
+                    throw new Error(`Batch ${batchNumber} failed: ${errorStatus}`);
+                }
+
+                const geminiResult: GeminiApiResponse = await geminiResponse.json();
+
+                if (geminiResult.error) {
+                    console.error(`Gemini API returned error on batch ${batchNumber} for ${targetLanguage}:`, JSON.stringify(geminiResult.error));
+                    throw new Error(`Gemini functional error on batch ${batchNumber}`);
+                 }
+
+                if (!geminiResult.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    console.error(`Invalid Gemini response structure on batch ${batchNumber}:`, JSON.stringify(geminiResult).substring(0, 500));
+                    throw new Error(`Invalid response structure on batch ${batchNumber}`);
+                }
+
+                const generatedText = geminiResult.candidates[0].content.parts[0].text;
+                const cleanedJsonString = generatedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+                // Attempt to parse the JSON from this batch
+                const batchTranslatedObject = JSON.parse(cleanedJsonString);
+
+                if (typeof batchTranslatedObject !== 'object' || batchTranslatedObject === null) {
+                     throw new Error(`Parsed batch ${batchNumber} result is not an object.`);
+                }
+
+                // Merge batch results into the final object
+                finalTranslatedObject = { ...finalTranslatedObject, ...batchTranslatedObject };
+                 console.log(`Successfully processed batch ${batchNumber} for ${targetLanguage}.`);
+
+                 // Optional: Add a small delay between batches ONLY if hitting RPS limits frequently
+                 // await new Promise(resolve => setTimeout(resolve, 200)); // e.g., 200ms delay
+
+            } catch (batchError) {
+                console.error(`Error processing batch ${batchNumber} for ${targetLanguage}:`, batchError);
+                overallSuccess = false;
+                break; // Stop processing further batches on error
             }
-        }
-        console.log(`Azure translation fetch for ${targetLanguage} complete (Success: ${translationSuccessful}).`);
+        } // End batch loop
+        // --- End Batching Logic ---
 
-        // --- Store in Server-Side Cache ONLY if successful ---
-        if (translationSuccessful) {
-            translationCache.set(cacheKey, translatedObject);
-            console.log(`Stored result for ${targetLanguage} in server cache.`);
-        }
-        // --- End Cache Store ---
-
-
-        // Set CDN/Browser caching headers
         const responseHeaders = new Headers();
-        responseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
-        responseHeaders.set('CDN-Cache-Control', 'public, max-age=3600, s-maxage=3600');
+        responseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+        responseHeaders.set('X-Translation-Cache', 'MISS');
 
-        return NextResponse.json(translatedObject, { headers: responseHeaders });
+        if (overallSuccess) {
+            console.log(`Gemini batch translation for ${targetLanguage} completed successfully.`);
+            // Validate final object has roughly the expected number of keys? Optional.
+             if (Object.keys(finalTranslatedObject).length < sourceEntries.length * 0.9) { // Example: Check if >90% keys are present
+                  console.warn(`Potential key loss during batch translation for ${targetLanguage}. Expected ~${sourceEntries.length}, Got ${Object.keys(finalTranslatedObject).length}`);
+                  // Decide if this constitutes an error or just partial success
+             }
+            translationCache.set(cacheKey, finalTranslatedObject);
+            console.log(`Stored batched Gemini result for ${targetLanguage} in server cache.`);
+            return NextResponse.json(finalTranslatedObject, { headers: responseHeaders });
+        } else {
+            console.error(`Gemini batch translation for ${targetLanguage} failed. Returning fallback.`);
+             // Return original English texts as fallback since batches failed
+            return NextResponse.json(texts, { status: 500, headers: responseHeaders });
+        }
 
-    } catch (error) {
+    } catch (error) { // Catch outer errors like initial request parsing
         console.error('API Route general error:', error);
-        return NextResponse.json({ error: 'Translation failed due to server error' }, { status: 500 });
+         if (error instanceof SyntaxError) { return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 }); }
+        return NextResponse.json({ error: 'Translation failed due to internal server error' }, { status: 500 });
     }
 }
 
 // GET handler
 export async function GET() {
-  return NextResponse.json({ message: 'Azure Translate API route active. Use POST.' });
+  return NextResponse.json({ message: 'Google AI Gemini Translate API route active. Use POST.' });
 }

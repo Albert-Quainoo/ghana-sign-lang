@@ -85,7 +85,6 @@ const courseModules: CourseModule[] = [
          { id: 1, title: "Asking Questions", description: "Learn how to form questions in GSL", duration: "25 min", type: "interactive", completed: false, locked: false },
          { id: 2, title: "Shopping Vocabulary", description: "Essential signs for shopping and transactions", duration: "30 min", type: "video", completed: false, locked: true },
      ] },
-     // Add other modules...
 ];
 const lessons: LessonLevels = {
       beginner: [
@@ -133,7 +132,7 @@ export default function LearnPage() {
       lessonsTab: "Lessons",
       practiceTab: "Practice",
       resourcesTab: "Resources",
-      dictionaryTab: "GSL Dictionary",
+      dictionaryTab: "Dictionary",
       lessonsTitle: "GSL Lessons",
       lessonsSubtitle: "Start your GSL journey with these structured lessons designed by experts.",
       viewToggleModules: "Course Modules",
@@ -305,12 +304,20 @@ export default function LearnPage() {
       <section className="section-padding content-bg-1">
          <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" data-orientation="horizontal">
-                 <div className="flex justify-center mb-8 md:mb-10">
-                   <TabsList className="bg-muted p-1 rounded-lg h-auto">
-                     <TabsTrigger value="lessons" className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">{isLoading ? fallbacks.lessonsTab : <span suppressHydrationWarning>{t("learn.tabs.lessons") ?? fallbacks.lessonsTab}</span>}</TabsTrigger>
-                     <TabsTrigger value="practice" className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">{isLoading ? fallbacks.practiceTab : <span suppressHydrationWarning>{t("learn.tabs.practice") ?? fallbacks.practiceTab}</span>}</TabsTrigger>
-                     <TabsTrigger value="resources" className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">{isLoading ? fallbacks.resourcesTab : <span suppressHydrationWarning>{t("learn.tabs.resources") ?? fallbacks.resourcesTab}</span>}</TabsTrigger>
-                     <TabsTrigger value="dictionary" className="rounded-md px-4 py-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">{isLoading ? fallbacks.dictionaryTab : <span suppressHydrationWarning>{t("learn.tabs.dictionary") ?? fallbacks.dictionaryTab}</span>}</TabsTrigger>
+                 <div className="flex justify-center mb-10 md:mb-10 overflow-x-auto pb-2">
+                   <TabsList className="bg-muted p-1 rounded-lg h-auto flex flex-nowrap"> 
+                     <TabsTrigger value="lessons" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm whitespace-nowrap">
+                         {isLoading ? fallbacks.lessonsTab : <span suppressHydrationWarning>{t("learn.tabs.lessons") ?? fallbacks.lessonsTab}</span>}
+                     </TabsTrigger>
+                     <TabsTrigger value="practice" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm whitespace-nowrap">
+                         {isLoading ? fallbacks.practiceTab : <span suppressHydrationWarning>{t("learn.tabs.practice") ?? fallbacks.practiceTab}</span>}
+                     </TabsTrigger>
+                     <TabsTrigger value="resources" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm whitespace-nowrap">
+                         {isLoading ? fallbacks.resourcesTab : <span suppressHydrationWarning>{t("learn.tabs.resources") ?? fallbacks.resourcesTab}</span>}
+                     </TabsTrigger>
+                     <TabsTrigger value="dictionary" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm whitespace-nowrap">
+                         {isLoading ? fallbacks.dictionaryTab : <span suppressHydrationWarning>{t("learn.tabs.dictionary") ?? fallbacks.dictionaryTab}</span>}
+                     </TabsTrigger>
                    </TabsList>
                  </div>
 
@@ -320,7 +327,7 @@ export default function LearnPage() {
                          <p className="text-muted-foreground md:text-xl/relaxed text-enhanced">{isLoading ? fallbacks.lessonsSubtitle : <span suppressHydrationWarning>{t("learn.lessons.subtitle") ?? fallbacks.lessonsSubtitle}</span>}</p>
                      </div>
                      <Tabs defaultValue="modules" className="w-full">
-                         <div className="flex justify-center mb-8">
+                         <div className="flex justify-center mb-8"> 
                            <TabsList className="bg-muted/80 p-1 rounded-lg h-auto">
                              <TabsTrigger value="modules" className="rounded-md px-3 py-1 text-sm data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">{isLoading ? fallbacks.viewToggleModules : <span suppressHydrationWarning>{t("learn.lessons.viewToggle.modules") ?? fallbacks.viewToggleModules}</span>}</TabsTrigger>
                              <TabsTrigger value="individual" className="rounded-md px-3 py-1 text-sm data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">{isLoading ? fallbacks.viewToggleIndividual : <span suppressHydrationWarning>{t("learn.lessons.viewToggle.individual") ?? fallbacks.viewToggleIndividual}</span>}</TabsTrigger>
@@ -458,11 +465,11 @@ export default function LearnPage() {
                                  <CardFooter className="p-4 md:p-5 mt-auto">
                                    {resource.titleKey === "learn.resources.community.title" ? (
                                        <Link href="/message-board" className="w-full">
-                                          <Button variant="outline" className="w-full btn-secondary">{isLoading ? fallbacks.resourcesCommunityButton : <span suppressHydrationWarning>{t(resource.buttonTextKey) ?? fallbacks.resourcesCommunityButton}</span>}</Button>
+                                          <Button variant="outline" className="btn-gradient">{isLoading ? fallbacks.resourcesCommunityButton : <span suppressHydrationWarning>{t(resource.buttonTextKey) ?? fallbacks.resourcesCommunityButton}</span>}</Button>
                                       </Link>
                                    ) : (
                                       <Link href={resource.href} className="w-full">
-                                          <Button variant="outline" className="w-full btn-secondary">{isLoading ? fallbacks.resourcesVideoButton : <span suppressHydrationWarning>{t(resource.buttonTextKey) ?? fallbacks.resourcesVideoButton}</span>}</Button>
+                                          <Button variant="outline" className="btn-gradient">{isLoading ? fallbacks.resourcesVideoButton : <span suppressHydrationWarning>{t(resource.buttonTextKey) ?? fallbacks.resourcesVideoButton}</span>}</Button>
                                       </Link>
                                   )}
                                 </CardFooter>
@@ -483,14 +490,24 @@ export default function LearnPage() {
                              <Input type="search" placeholder={isLoading ? fallbacks.dictionarySearchPlaceholder : t("learn.dictionary.searchPlaceholder") ?? fallbacks.dictionarySearchPlaceholder} className="w-full rounded-lg border border-input bg-background pl-9 pr-4 py-2 text-sm h-10" aria-label="Search dictionary signs" value={dictionarySearchTerm} onChange={(e) => setDictionarySearchTerm(e.target.value)} />
                            </div>
                        </div>
-                       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-6 max-w-6xl mx-auto">
+                       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 lg:gap-6 max-w-6xl mx-auto">
                            {filteredDictionarySigns.length > 0 ? (
                                filteredDictionarySigns.map(([word, data]: [string, DictionarySignData]) => (
-                                   <Card key={word} className="card-standard glass-card-content flex flex-col">
-                                       <CardHeader className="p-0"><div className="aspect-square bg-muted flex items-center justify-center overflow-hidden"><Image src={data.image} width={100} height={100} alt={isLoading? `Sign for ${word}`: t("learn.dictionary.signAlt") ?? `Sign for ${word}`} className="object-contain"/></div></CardHeader>
-                                       <CardContent className="p-3 flex-grow">
-                                           <h3 className="font-semibold capitalize text-sm">{word}</h3>
-                                           <p className="text-xs text-muted-foreground text-enhanced mt-1">{isLoading? data.definitionKey : <span suppressHydrationWarning>{t(data.definitionKey) ?? data.definitionKey}</span>}</p>
+                                   <Card key={word} className="card-standard glass-card-content flex flex-col min-w-0 max-w-full w-full mx-auto">
+                                       <CardHeader className="p-0">
+                                         <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                                           <Image
+                                             src={data.image}
+                                             width={120}
+                                             height={120}
+                                             alt={isLoading? `Sign for ${word}`: t("learn.dictionary.signAlt") ?? `Sign for ${word}`}
+                                             className="object-contain"
+                                           />
+                                         </div>
+                                       </CardHeader>
+                                       <CardContent className="p-4 flex-grow min-w-0">
+                                           <h3 className="font-semibold capitalize text-base mb-1 break-words truncate w-full">{word}</h3>
+                                           <p className="text-sm text-muted-foreground text-enhanced mt-1 break-words w-full">{isLoading? data.definitionKey : <span suppressHydrationWarning>{t(data.definitionKey) ?? data.definitionKey}</span>}</p>
                                        </CardContent>
                                    </Card>
                                ))
@@ -499,35 +516,6 @@ export default function LearnPage() {
                    </TabsContent>
              </Tabs>
          </div>
-      </section>
-
-      <section id="interactive-learning" className="section-padding content-bg-2">
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white to-transparent"></div>
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
-        <div className="container px-4 md:px-6 relative max-w-7xl mx-auto">
-          <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center justify-center p-1 rounded-full bg-pink-100 text-pink-700 mb-4">
-                <div className="rounded-full bg-white p-1"><Sparkles className="h-4 w-4 text-pink-600"/></div>
-                <span className="ml-2 mr-3 text-sm font-medium">{isLoading ? fallbacks.interactiveBadge : <span suppressHydrationWarning>{t("learn.interactive.badge") ?? fallbacks.interactiveBadge}</span>}</span>
-              </div>
-              <h2 className="heading-2 gradient-text-heading">{isLoading ? fallbacks.interactiveTitle : <span suppressHydrationWarning>{t("learn.interactive.title") ?? fallbacks.interactiveTitle}</span>}</h2>
-              <p className="text-muted-foreground md:text-xl/relaxed text-enhanced">{isLoading ? fallbacks.interactiveSubtitle : <span suppressHydrationWarning>{t("learn.interactive.subtitle") ?? fallbacks.interactiveSubtitle}</span>}</p>
-              <ul className="grid gap-2">
-                <li className="flex items-start gap-2"><span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full bg-sky-500 flex-shrink-0" /><div className="text-base text-muted-foreground text-enhanced">{isLoading ? fallbacks.interactivePoint1 : <span suppressHydrationWarning>{t("learn.interactive.point1") ?? fallbacks.interactivePoint1}</span>}</div></li>
-                <li className="flex items-start gap-2"><span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full bg-sky-500 flex-shrink-0" /><div className="text-base text-muted-foreground text-enhanced">{isLoading ? fallbacks.interactivePoint2 : <span suppressHydrationWarning>{t("learn.interactive.point2") ?? fallbacks.interactivePoint2}</span>}</div></li>
-                <li className="flex items-start gap-2"><span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full bg-sky-500 flex-shrink-0" /><div className="text-base text-muted-foreground text-enhanced">{isLoading ? fallbacks.interactivePoint3 : <span suppressHydrationWarning>{t("learn.interactive.point3") ?? fallbacks.interactivePoint3}</span>}</div></li>
-              </ul>
-              <Button size="lg" className="mt-4 btn-gradient">{isLoading ? fallbacks.interactiveCta : <span suppressHydrationWarning>{t("learn.interactive.cta") ?? fallbacks.interactiveCta}</span>}</Button>
-            </div>
-            <div className="flex justify-center">
-              <div className="relative w-full max-w-md mx-auto lg:max-w-lg">
-                <div className="absolute -inset-1 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl blur-md opacity-75 -rotate-3"></div>
-                <Image src="/placeholder.svg?height=400&width=600" width={600} height={400} alt={isLoading? fallbacks.interactiveImageAlt : t("learn.interactive.imageAlt") ?? fallbacks.interactiveImageAlt} className="rounded-2xl relative shadow-lg object-cover border-4 border-white -rotate-3 w-full h-auto"/>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
     </>
   )

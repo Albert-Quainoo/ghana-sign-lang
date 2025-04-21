@@ -34,3 +34,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Troubleshooting Usability & Display Scaling
+
+- If the UI appears too small or too large, adjust your browser zoom (Ctrl + '+' or '-').
+- For best results, test on both desktop and mobile devices.
+- If you encounter layout issues, ensure your browser window is not too narrow.
+- The app is responsive and should scale well, but report issues if you find any.

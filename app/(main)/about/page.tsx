@@ -104,7 +104,7 @@ export default function AboutPage() {
                 <Link href="/learn" scroll={true}>
                   <Button
                     size="lg"
-                    className="bg-white/90 text-purple-600 hover:bg-white btn-secondary text-enhanced"
+                    className="bg-white/90 text-purple-600 btn-gradient"
                   >
                     <span suppressHydrationWarning>{t("about.join.button1")}</span>
                   </Button>

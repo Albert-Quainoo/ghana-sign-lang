@@ -1,16 +1,17 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Heart, Sparkles, BookOpen, Video } from "lucide-react"
-import { useLanguage } from "@/contexts/language-context"
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, Sparkles, BookOpen, Video } from "lucide-react"; // Removed unused icons
+import { useLanguage } from "@/contexts/language-context";
+
 
 // Fallback Texts
 const fallbacks = {
-    heroTitle: "Family Orientation",
-    heroSubtitle: "Support for families with deaf members to create inclusive environments and effectively communicate.",
+    title: "Family Orientation & Support",
+    subtitle: "Resources and guidance for families to create inclusive environments and effectively communicate with deaf family members.",
     supportingTitle: "Supporting Your Deaf Family Member",
     supportingDesc: "Creating a supportive and inclusive environment is essential for the well-being and development of deaf family members.",
     supportingPoint1: "Learn basic GSL signs to establish fundamental communication",
@@ -64,65 +65,49 @@ const fallbacks = {
     ctaTitle: "Start Your Family's GSL Journey Today",
     ctaDesc: "Begin learning Ghanaian Sign Language together and create a more inclusive family environment.",
     ctaButton1: "Explore Learning Resources",
-    ctaButton2: "Contact Support Team",
+    ctaButton2: "Contact Support Team"
 };
 
+
 export default function FamilyOrientationPage() {
-  const { t, isLoading } = useLanguage(); // Use hook
+  const { t, isLoading } = useLanguage();
 
-  // Data using keys
   const parentResources = [
-    { id: 1, titleKey: "family.parents.card1.title", descriptionKey: "family.parents.card1.description", contentKey: "family.parents.card1.content", timeKey: "family.parents.card1.time", buttonKey: "family.parents.card1.button", icon: BookOpen, image: "/placeholder.svg?height=200&width=350", altKey: "family.parents.card1.alt", fallbackButton: fallbacks.parentsCard1Button },
-    { id: 2, titleKey: "family.parents.card2.title", descriptionKey: "family.parents.card2.description", contentKey: "family.parents.card2.content", timeKey: "family.parents.card2.time", buttonKey: "family.parents.card2.button", icon: Heart, image: "/placeholder.svg?height=200&width=350", altKey: "family.parents.card2.alt", fallbackButton: fallbacks.parentsCard2Button },
-  ];
-  const childrenResources = [
-    { id: 1, titleKey: "family.children.card1.title", descriptionKey: "family.children.card1.description", contentKey: "family.children.card1.content", timeKey: "family.children.card1.time", buttonKey: "family.children.card1.button", icon: Sparkles, image: "/placeholder.svg?height=200&width=350", altKey: "family.children.card1.alt", fallbackButton: fallbacks.childrenCard1Button },
-    { id: 2, titleKey: "family.children.card2.title", descriptionKey: "family.children.card2.description", contentKey: "family.children.card2.content", timeKey: "family.children.card2.time", buttonKey: "family.children.card2.button", icon: Video, image: "/placeholder.svg?height=200&width=350", altKey: "family.children.card2.alt", fallbackButton: fallbacks.childrenCard2Button },
-  ];
-  const supportNetwork = [
-    { id: 1, titleKey: "family.support.card1.title", descriptionKey: "family.support.card1.description", contentKey: "family.support.card1.content", pointsKeys: ["family.support.card1.point1", "family.support.card1.point2", "family.support.card1.point3"], buttonKey: "family.support.card1.button", fallbackButton: fallbacks.supportCard1Button },
-    { id: 2, titleKey: "family.support.card2.title", descriptionKey: "family.support.card2.description", contentKey: "family.support.card2.content", pointsKeys: ["family.support.card2.point1", "family.support.card2.point2", "family.support.card2.point3"], buttonKey: "family.support.card2.button", fallbackButton: fallbacks.supportCard2Button },
+    { id: 1, titleKey: "family.parents.card1.title", descriptionKey: "family.parents.card1.description", contentKey: "family.parents.card1.content", timeKey: "family.parents.card1.time", buttonKey: "family.parents.card1.button", icon: BookOpen, image: "/placeholder.svg?height=200&width=350", altKey: "family.parents.card1.alt", fbTitle: fallbacks.parentsCard1Title, fbDesc: fallbacks.parentsCard1Desc, fbContent: fallbacks.parentsCard1Content, fbTime: fallbacks.parentsCard1Time, fbButton: fallbacks.parentsCard1Button, fbAlt: fallbacks.parentsCard1Alt },
+    { id: 2, titleKey: "family.parents.card2.title", descriptionKey: "family.parents.card2.description", contentKey: "family.parents.card2.content", timeKey: "family.parents.card2.time", buttonKey: "family.parents.card2.button", icon: Heart, image: "/placeholder.svg?height=200&width=350", altKey: "family.parents.card2.alt", fbTitle: fallbacks.parentsCard2Title, fbDesc: fallbacks.parentsCard2Desc, fbContent: fallbacks.parentsCard2Content, fbTime: fallbacks.parentsCard2Time, fbButton: fallbacks.parentsCard2Button, fbAlt: fallbacks.parentsCard2Alt },
   ];
 
+  const childrenResources = [
+    { id: 1, titleKey: "family.children.card1.title", descriptionKey: "family.children.card1.description", contentKey: "family.children.card1.content", timeKey: "family.children.card1.time", buttonKey: "family.children.card1.button", icon: Sparkles, image: "/placeholder.svg?height=200&width=350", altKey: "family.children.card1.alt", fbTitle: fallbacks.childrenCard1Title, fbDesc: fallbacks.childrenCard1Desc, fbContent: fallbacks.childrenCard1Content, fbTime: fallbacks.childrenCard1Time, fbButton: fallbacks.childrenCard1Button, fbAlt: fallbacks.childrenCard1Alt },
+    { id: 2, titleKey: "family.children.card2.title", descriptionKey: "family.children.card2.description", contentKey: "family.children.card2.content", timeKey: "family.children.card2.time", buttonKey: "family.children.card2.button", icon: Video, image: "/placeholder.svg?height=200&width=350", altKey: "family.children.card2.alt", fbTitle: fallbacks.childrenCard2Title, fbDesc: fallbacks.childrenCard2Desc, fbContent: fallbacks.childrenCard2Content, fbTime: fallbacks.childrenCard2Time, fbButton: fallbacks.childrenCard2Button, fbAlt: fallbacks.childrenCard2Alt },
+  ];
+
+  const supportNetwork = [
+    { id: 1, titleKey: "family.support.card1.title", descriptionKey: "family.support.card1.description", contentKey: "family.support.card1.content", pointsKeys: ["family.support.card1.point1", "family.support.card1.point2", "family.support.card1.point3"], buttonKey: "family.support.card1.button", fbTitle: fallbacks.supportCard1Title, fbDesc: fallbacks.supportCard1Desc, fbContent: fallbacks.supportCard1Content, fbButton: fallbacks.supportCard1Button, fbPoints: [fallbacks.supportCard1Point1, fallbacks.supportCard1Point2, fallbacks.supportCard1Point3] },
+    { id: 2, titleKey: "family.support.card2.title", descriptionKey: "family.support.card2.description", contentKey: "family.support.card2.content", pointsKeys: ["family.support.card2.point1", "family.support.card2.point2", "family.support.card2.point3"], buttonKey: "family.support.card2.button", fbTitle: fallbacks.supportCard2Title, fbDesc: fallbacks.supportCard2Desc, fbContent: fallbacks.supportCard2Content, fbButton: fallbacks.supportCard2Button, fbPoints: [fallbacks.supportCard2Point1, fallbacks.supportCard2Point2, fallbacks.supportCard2Point3] },
+  ];
 
   return (
     <>
-      {/* Hero Section */}
       <section className="section-padding hero-bg">
         <div className="container px-4 md:px-6 relative max-w-screen-xl mx-auto">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
-              <h1 className="heading-1 gradient-text-hero">
-                {isLoading ? fallbacks.heroTitle : <span suppressHydrationWarning>{t("family.hero.title") ?? fallbacks.heroTitle}</span>}
-              </h1>
-              <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed">
-                {isLoading ? fallbacks.heroSubtitle : <span suppressHydrationWarning>{t("family.hero.subtitle") ?? fallbacks.heroSubtitle}</span>}
-              </p>
+              <h1 className="heading-1 gradient-text-hero">{isLoading ? fallbacks.title : <span suppressHydrationWarning>{t("family.hero.title") ?? fallbacks.title}</span>}</h1>
+              <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed">{isLoading ? fallbacks.subtitle : <span suppressHydrationWarning>{t("family.hero.subtitle") ?? fallbacks.subtitle}</span>}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Supporting Section */}
       <section className="section-padding content-bg-1">
         <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
           <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 items-center">
             <div className="space-y-4 lg:space-y-5">
-              <h2 className="heading-2 gradient-text-heading">
-                {isLoading ? fallbacks.supportingTitle : <span suppressHydrationWarning>{t("family.supporting.title") ?? fallbacks.supportingTitle}</span>}
-              </h2>
-              <p className="text-muted-foreground md:text-lg/relaxed">
-                {isLoading ? fallbacks.supportingDesc : <span suppressHydrationWarning>{t("family.supporting.description") ?? fallbacks.supportingDesc}</span>}
-              </p>
+              <h2 className="heading-2 gradient-text-heading">{isLoading ? fallbacks.supportingTitle : <span suppressHydrationWarning>{t("family.supporting.title") ?? fallbacks.supportingTitle}</span>}</h2>
+              <p className="text-muted-foreground md:text-lg/relaxed">{isLoading ? fallbacks.supportingDesc : <span suppressHydrationWarning>{t("family.supporting.description") ?? fallbacks.supportingDesc}</span>}</p>
               <ul className="grid gap-3">
-                 {[1, 2, 3].map(num => (
-                   <li key={num} className="flex items-start gap-3">
-                     <span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full glow-primary bg-pink-500 flex-shrink-0" />
-                     <span className="text-base text-muted-foreground">
-                       {isLoading ? fallbacks[`supportingPoint${num}` as keyof typeof fallbacks] : <span suppressHydrationWarning>{t(`family.supporting.point${num}`) ?? fallbacks[`supportingPoint${num}` as keyof typeof fallbacks]}</span>}
-                     </span>
-                   </li>
-                 ))}
+                {[1, 2, 3].map(num => ( <li key={num} className="flex items-start gap-3"> <span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full glow-primary bg-pink-500 flex-shrink-0" /> <span className="text-base text-muted-foreground">{isLoading ? fallbacks[`supportingPoint${num}` as keyof typeof fallbacks] : <span suppressHydrationWarning>{t(`family.supporting.point${num}`) ?? fallbacks[`supportingPoint${num}` as keyof typeof fallbacks]}</span>}</span></li> ))}
               </ul>
             </div>
             <div className="flex justify-center">
@@ -135,43 +120,89 @@ export default function FamilyOrientationPage() {
         </div>
       </section>
 
-      {/* Resources for Parents Section */}
       <section id="parents" className="section-padding content-bg-2">
         <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
           <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10 lg:mb-12">
             <div className="space-y-2 max-w-3xl">
-              <h2 className="heading-2 gradient-text-heading">
-                {isLoading ? fallbacks.parentsTitle : <span suppressHydrationWarning>{t("family.parents.title") ?? fallbacks.parentsTitle}</span>}
-              </h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                {isLoading ? fallbacks.parentsDesc : <span suppressHydrationWarning>{t("family.parents.description") ?? fallbacks.parentsDesc}</span>}
-              </p>
+              <h2 className="heading-2 gradient-text-heading">{isLoading ? fallbacks.parentsTitle : <span suppressHydrationWarning>{t("family.parents.title") ?? fallbacks.parentsTitle}</span>}</h2>
+              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">{isLoading ? fallbacks.parentsDesc : <span suppressHydrationWarning>{t("family.parents.description") ?? fallbacks.parentsDesc}</span>}</p>
             </div>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
             {parentResources.map((resource) => (
               <Card key={resource.id} className="card-standard glass-card-content gradient-border subtle-shadow flex flex-col h-full shine-effect">
                 <CardHeader className="p-0">
-                  <div className="overflow-hidden aspect-[16/9]"><Image src={resource.image} width={350} height={200} alt={isLoading ? `Parent resource ${resource.id}` : t(resource.altKey) ?? `Parent resource ${resource.id}`} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300 img-duotone-blue-purple"/></div>
+                  <div className="overflow-hidden aspect-[16/9]"><Image src={resource.image} width={350} height={200} alt={isLoading ? resource.fbAlt : t(resource.altKey) ?? resource.fbAlt} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300 img-duotone-blue-purple"/></div>
                   <div className="p-4 md:p-5">
-                    <CardTitle className="text-lg font-semibold group-hover:text-pink-600 transition-colors flex items-center">
-                       <resource.icon className="w-5 h-5 mr-2 text-primary/80 glow-primary" />
-                       {isLoading ? `Parent Title ${resource.id}` : <span suppressHydrationWarning>{t(resource.titleKey) ?? `Parent Title ${resource.id}`}</span>}
-                    </CardTitle>
-                    <CardDescription className="text-sm mt-1">{isLoading ? `Parent Desc ${resource.id}` : <span suppressHydrationWarning>{t(resource.descriptionKey) ?? `Parent Desc ${resource.id}`}</span>}</CardDescription>
+                    <CardTitle className="text-lg font-semibold group-hover:text-pink-600 transition-colors flex items-center"> <resource.icon className="w-5 h-5 mr-2 text-primary/80 glow-primary" /> {isLoading ? resource.fbTitle : <span suppressHydrationWarning>{t(resource.titleKey) ?? resource.fbTitle}</span>} </CardTitle>
+                    <CardDescription className="text-sm mt-1">{isLoading ? resource.fbDesc : <span suppressHydrationWarning>{t(resource.descriptionKey) ?? resource.fbDesc}</span>}</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 md:p-5 flex-grow">
-                  <p className="text-sm text-muted-foreground">{isLoading ? `Parent Content ${resource.id}` : <span suppressHydrationWarning>{t(resource.contentKey) ?? `Parent Content ${resource.id}`}</span>}</p>
-                  <div className="mt-3 flex items-center text-xs text-muted-foreground">
-                     <resource.icon className="mr-1 h-3.5 w-3.5 text-primary/70 glow-primary" />
-                    <span>{isLoading ? "Time" : <span suppressHydrationWarning>{t(resource.timeKey) ?? "Time"}</span>}</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">{isLoading ? resource.fbContent : <span suppressHydrationWarning>{t(resource.contentKey) ?? resource.fbContent}</span>}</p>
+                  <div className="mt-3 flex items-center text-xs text-muted-foreground"> <resource.icon className="mr-1 h-3.5 w-3.5 text-primary/70 glow-primary" /> <span>{isLoading ? resource.fbTime : <span suppressHydrationWarning>{t(resource.timeKey) ?? resource.fbTime}</span>}</span></div>
                 </CardContent>
-                <CardFooter className="p-4 md:p-5 mt-auto">
-                  <Button className="w-full btn-gradient"> {/* Primary */}
-                    {isLoading ? resource.fallbackButton : <span suppressHydrationWarning>{t(resource.buttonKey) ?? resource.fallbackButton}</span>}
-                  </Button>
+                <CardFooter className="p-4 md:p-5 mt-auto"><Button className="w-full btn-gradient">{isLoading ? resource.fbButton : <span suppressHydrationWarning>{t(resource.buttonKey) ?? resource.fbButton}</span>}</Button></CardFooter>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+       <section id="children" className="section-padding content-bg-1">
+        <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10 lg:mb-12">
+            <div className="space-y-2 max-w-3xl">
+              <h2 className="heading-2 gradient-text-heading">{isLoading ? fallbacks.childrenTitle : <span suppressHydrationWarning>{t("family.children.title") ?? fallbacks.childrenTitle}</span>}</h2>
+              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">{isLoading ? fallbacks.childrenDesc : <span suppressHydrationWarning>{t("family.children.description") ?? fallbacks.childrenDesc}</span>}</p>
+            </div>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
+            {childrenResources.map((resource) => (
+              <Card key={resource.id} className="card-standard glass-card-content gradient-border subtle-shadow flex flex-col h-full shine-effect">
+                 <CardHeader className="p-0">
+                   <div className="overflow-hidden aspect-[16/9]"><Image src={resource.image} width={350} height={200} alt={isLoading ? resource.fbAlt : t(resource.altKey) ?? resource.fbAlt} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300 img-duotone-pink-purple"/></div>
+                   <div className="p-4 md:p-5">
+                     <CardTitle className="text-lg font-semibold group-hover:text-pink-600 transition-colors flex items-center"><resource.icon className="w-5 h-5 mr-2 text-primary/80 glow-primary" />{isLoading ? resource.fbTitle : <span suppressHydrationWarning>{t(resource.titleKey) ?? resource.fbTitle}</span>}</CardTitle>
+                     <CardDescription className="text-sm mt-1">{isLoading ? resource.fbDesc : <span suppressHydrationWarning>{t(resource.descriptionKey) ?? resource.fbDesc}</span>}</CardDescription>
+                   </div>
+                 </CardHeader>
+                 <CardContent className="p-4 md:p-5 flex-grow">
+                   <p className="text-sm text-muted-foreground">{isLoading ? resource.fbContent : <span suppressHydrationWarning>{t(resource.contentKey) ?? resource.fbContent}</span>}</p>
+                   <div className="mt-3 flex items-center text-xs text-muted-foreground"><resource.icon className="mr-1 h-3.5 w-3.5 text-primary/70 glow-primary" /><span>{isLoading ? resource.fbTime : <span suppressHydrationWarning>{t(resource.timeKey) ?? resource.fbTime}</span>}</span></div>
+                 </CardContent>
+                 <CardFooter className="p-4 md:p-5 mt-auto"><Button className="w-full btn-gradient">{isLoading ? resource.fbButton : <span suppressHydrationWarning>{t(resource.buttonKey) ?? resource.fbButton}</span>}</Button></CardFooter>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="support" className="section-padding content-bg-2">
+        <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
+          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10 lg:mb-12">
+            <div className="space-y-2 max-w-3xl">
+              <h2 className="heading-2 gradient-text-heading">{isLoading ? fallbacks.supportTitle : <span suppressHydrationWarning>{t("family.support.title") ?? fallbacks.supportTitle}</span>}</h2>
+              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">{isLoading ? fallbacks.supportDesc : <span suppressHydrationWarning>{t("family.support.description") ?? fallbacks.supportDesc}</span>}</p>
+            </div>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
+            {supportNetwork.map((item) => (
+              <Card key={item.id} className="card-standard glass-card-content shine-effect subtle-shadow">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">{isLoading ? item.fbTitle : <span suppressHydrationWarning>{t(item.titleKey) ?? item.fbTitle}</span>}</CardTitle>
+                  <CardDescription>{isLoading ? item.fbDesc : <span suppressHydrationWarning>{t(item.descriptionKey) ?? item.fbDesc}</span>}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-4 text-sm text-muted-foreground">{isLoading ? item.fbContent : <span suppressHydrationWarning>{t(item.contentKey) ?? item.fbContent}</span>}</p>
+                  <ul className="space-y-2">
+                    {item.pointsKeys.map((pointKey, index) => (
+                      <li key={index} className="flex items-start gap-2"> <span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full bg-purple-400 glow-purple flex-shrink-0" /> <span className="text-sm text-muted-foreground">{isLoading ? item.fbPoints[index] : <span suppressHydrationWarning>{t(pointKey) ?? item.fbPoints[index]}</span>}</span></li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="btn-gradient">{isLoading ? item.fbButton : <span suppressHydrationWarning>{t(item.buttonKey) ?? item.fbButton}</span>}</Button>
                 </CardFooter>
               </Card>
             ))}
@@ -179,114 +210,15 @@ export default function FamilyOrientationPage() {
         </div>
       </section>
 
-      {/* Resources for Children Section */}
-      <section id="children" className="section-padding content-bg-1">
-        <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
-           <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10 lg:mb-12">
-             <div className="space-y-2 max-w-3xl">
-               <h2 className="heading-2 gradient-text-heading">
-                  {isLoading ? fallbacks.childrenTitle : <span suppressHydrationWarning>{t("family.children.title") ?? fallbacks.childrenTitle}</span>}
-               </h2>
-               <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                  {isLoading ? fallbacks.childrenDesc : <span suppressHydrationWarning>{t("family.children.description") ?? fallbacks.childrenDesc}</span>}
-               </p>
-             </div>
-           </div>
-           <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
-             {childrenResources.map((resource) => (
-               <Card key={resource.id} className="card-standard glass-card-content gradient-border subtle-shadow flex flex-col h-full shine-effect">
-                 <CardHeader className="p-0">
-                   <div className="overflow-hidden aspect-[16/9]"><Image src={resource.image} width={350} height={200} alt={isLoading ? `Child resource ${resource.id}` : t(resource.altKey) ?? `Child resource ${resource.id}`} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300 img-duotone-pink-purple"/></div>
-                   <div className="p-4 md:p-5">
-                     <CardTitle className="text-lg font-semibold group-hover:text-pink-600 transition-colors flex items-center">
-                        <resource.icon className="w-5 h-5 mr-2 text-primary/80 glow-primary" />
-                        {isLoading ? `Child Title ${resource.id}` : <span suppressHydrationWarning>{t(resource.titleKey) ?? `Child Title ${resource.id}`}</span>}
-                     </CardTitle>
-                     <CardDescription className="text-sm mt-1">{isLoading ? `Child Desc ${resource.id}` : <span suppressHydrationWarning>{t(resource.descriptionKey) ?? `Child Desc ${resource.id}`}</span>}</CardDescription>
-                   </div>
-                 </CardHeader>
-                 <CardContent className="p-4 md:p-5 flex-grow">
-                   <p className="text-sm text-muted-foreground">{isLoading ? `Child Content ${resource.id}` : <span suppressHydrationWarning>{t(resource.contentKey) ?? `Child Content ${resource.id}`}</span>}</p>
-                   <div className="mt-3 flex items-center text-xs text-muted-foreground">
-                      <resource.icon className="mr-1 h-3.5 w-3.5 text-primary/70 glow-primary" />
-                     <span>{isLoading ? "Time/Activity" : <span suppressHydrationWarning>{t(resource.timeKey) ?? "Time/Activity"}</span>}</span>
-                   </div>
-                 </CardContent>
-                 <CardFooter className="p-4 md:p-5 mt-auto">
-                   <Button className="w-full btn-gradient"> {/* Primary */}
-                     {isLoading ? resource.fallbackButton : <span suppressHydrationWarning>{t(resource.buttonKey) ?? resource.fallbackButton}</span>}
-                   </Button>
-                 </CardFooter>
-               </Card>
-             ))}
-           </div>
-         </div>
-      </section>
-
-      {/* Support Network Section */}
-      <section id="support" className="section-padding content-bg-2">
-         <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
-           <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10 lg:mb-12">
-             <div className="space-y-2 max-w-3xl">
-               <h2 className="heading-2 gradient-text-heading">
-                  {isLoading ? fallbacks.supportTitle : <span suppressHydrationWarning>{t("family.support.title") ?? fallbacks.supportTitle}</span>}
-               </h2>
-               <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                  {isLoading ? fallbacks.supportDesc : <span suppressHydrationWarning>{t("family.support.description") ?? fallbacks.supportDesc}</span>}
-               </p>
-             </div>
-           </div>
-           <div className="grid gap-6 md:grid-cols-2 lg:gap-8">
-             {supportNetwork.map((item) => (
-               <Card key={item.id} className="card-standard glass-card-content shine-effect subtle-shadow">
-                 <CardHeader>
-                   <CardTitle className="text-xl font-semibold">{isLoading ? `Support Title ${item.id}` : <span suppressHydrationWarning>{t(item.titleKey) ?? `Support Title ${item.id}`}</span>}</CardTitle>
-                   <CardDescription>{isLoading ? `Support Desc ${item.id}` : <span suppressHydrationWarning>{t(item.descriptionKey) ?? `Support Desc ${item.id}`}</span>}</CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                   <p className="mb-4 text-sm text-muted-foreground">{isLoading ? `Support Content ${item.id}` : <span suppressHydrationWarning>{t(item.contentKey) ?? `Support Content ${item.id}`}</span>}</p>
-                   <ul className="space-y-2">
-                     {item.pointsKeys.map((pointKey, index) => (
-                       <li key={index} className="flex items-start gap-2">
-                         <span className="mt-1 flex h-2 w-2 translate-y-1 rounded-full bg-purple-400 glow-purple flex-shrink-0" />
-                         <span className="text-sm text-muted-foreground">{isLoading ? `Point ${index+1}` : <span suppressHydrationWarning>{t(pointKey) ?? `Point ${index+1}`}</span>}</span>
-                       </li>
-                     ))}
-                   </ul>
-                 </CardContent>
-                 <CardFooter>
-                   <Button variant="outline" className="w-full sm:w-auto btn-secondary"> {/* Secondary */}
-                      {isLoading ? item.fallbackButton : <span suppressHydrationWarning>{t(item.buttonKey) ?? item.fallbackButton}</span>}
-                   </Button>
-                 </CardFooter>
-               </Card>
-             ))}
-           </div>
-         </div>
-      </section>
-
-      {/* Start Your Journey section */}
       <section className="section-padding cta-bg">
         <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2 max-w-3xl">
-              <h2 className="heading-2 text-white">
-                 {isLoading ? fallbacks.ctaTitle : <span suppressHydrationWarning>{t("family.cta.title") ?? fallbacks.ctaTitle}</span>}
-              </h2>
-              <p className="max-w-[900px] text-white/80 md:text-xl/relaxed">
-                 {isLoading ? fallbacks.ctaDesc : <span suppressHydrationWarning>{t("family.cta.description") ?? fallbacks.ctaDesc}</span>}
-              </p>
+              <h2 className="heading-2 text-white">{isLoading ? fallbacks.ctaTitle : <span suppressHydrationWarning>{t("family.cta.title") ?? fallbacks.ctaTitle}</span>}</h2>
+              <p className="max-w-[900px] text-white/80 md:text-xl/relaxed">{isLoading ? fallbacks.ctaDesc : <span suppressHydrationWarning>{t("family.cta.description") ?? fallbacks.ctaDesc}</span>}</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-                <Link href="/learn" scroll={true}>
-                  <Button size="lg" className="btn-gradient"> {/* Secondary */}
-                     {isLoading ? fallbacks.ctaButton1 : <span suppressHydrationWarning>{t("family.cta.button1") ?? fallbacks.ctaButton1}</span>}
-                  </Button>
-                </Link>
-                <Link href="/contact" scroll={true}>
-                  <Button variant="outline" size="lg" className="btn-secondary"> {/* Secondary */}
-                     {isLoading ? fallbacks.ctaButton2 : <span suppressHydrationWarning>{t("family.cta.button2") ?? fallbacks.ctaButton2}</span>}
-                  </Button>
-                </Link>
+                <Link href="/learn" scroll={true}><Button size="lg" className="btn-gradient">{isLoading ? fallbacks.ctaButton1 : <span suppressHydrationWarning>{t("family.cta.button1") ?? fallbacks.ctaButton1}</span>}</Button></Link>
+                <Link href="/contact" scroll={true}><Button variant="outline" size="lg" className="btn-outline prismatic-glow">{isLoading ? fallbacks.ctaButton2 : <span suppressHydrationWarning>{t("family.cta.button2") ?? fallbacks.ctaButton2}</span>}</Button></Link>
               </div>
             </div>
           </div>
