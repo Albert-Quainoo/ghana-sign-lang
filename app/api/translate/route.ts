@@ -16,14 +16,27 @@ if (!googleApiKey) {
 }
 
 // Define expected Gemini response structure
+interface SafetyRating {
+    category: string;
+    probability: string; 
+}
+
 interface GeminiPart { text: string; }
 interface GeminiContent { parts: GeminiPart[]; role: string; }
-interface GeminiCandidate { content: GeminiContent; finishReason: string; index: number; safetyRatings: any[]; }
-interface GeminiApiResponse { candidates: GeminiCandidate[]; promptFeedback?: any; error?: { code: number; message: string; status: string }; }
-
+interface GeminiCandidate {
+    content: GeminiContent;
+    finishReason: string;
+    index: number;
+    safetyRatings: SafetyRating[]; 
+}
+interface GeminiApiResponse {
+    candidates: GeminiCandidate[];
+    promptFeedback?: unknown; 
+    error?: { code: number; message: string; status: string };
+}
 // Function to build the prompt for Gemini
 function buildTranslationPrompt(sourceTexts: Record<string, string>, targetLangCode: string, sourceLangCode: string = 'en'): string {
-    const sourceJsonString = JSON.stringify(sourceTexts); // Use compact JSON for prompt
+    const sourceJsonString = JSON.stringify(sourceTexts); 
 
     return `
 TASK: Translate the string values within the following JSON object from the source language "${sourceLangCode}" to the target language "${targetLangCode}".
@@ -108,7 +121,7 @@ export async function POST(request: NextRequest) {
 
                 if (!geminiResponse.ok) {
                     const errorStatus = geminiResponse.status;
-                    const errorData = await geminiResponse.json().catch(() => ({})); // Try to parse error, ignore if not JSON
+                    const errorData = await geminiResponse.json().catch(() => ({})); 
                     console.error(`Gemini API Error on batch ${batchNumber} (${errorStatus}) for lang ${targetLanguage}:`, JSON.stringify(errorData));
                     if (errorStatus === 429) { console.warn(`Gemini Rate Limit hit on batch ${batchNumber} for ${targetLanguage}.`); }
                     throw new Error(`Batch ${batchNumber} failed: ${errorStatus}`);
@@ -140,15 +153,13 @@ export async function POST(request: NextRequest) {
                 finalTranslatedObject = { ...finalTranslatedObject, ...batchTranslatedObject };
                  console.log(`Successfully processed batch ${batchNumber} for ${targetLanguage}.`);
 
-                 // Optional: Add a small delay between batches ONLY if hitting RPS limits frequently
-                 // await new Promise(resolve => setTimeout(resolve, 200)); // e.g., 200ms delay
 
             } catch (batchError) {
                 console.error(`Error processing batch ${batchNumber} for ${targetLanguage}:`, batchError);
                 overallSuccess = false;
-                break; // Stop processing further batches on error
+                break; 
             }
-        } // End batch loop
+        } 
         // --- End Batching Logic ---
 
         const responseHeaders = new Headers();
@@ -157,21 +168,18 @@ export async function POST(request: NextRequest) {
 
         if (overallSuccess) {
             console.log(`Gemini batch translation for ${targetLanguage} completed successfully.`);
-            // Validate final object has roughly the expected number of keys? Optional.
-             if (Object.keys(finalTranslatedObject).length < sourceEntries.length * 0.9) { // Example: Check if >90% keys are present
+             if (Object.keys(finalTranslatedObject).length < sourceEntries.length * 0.9) { 
                   console.warn(`Potential key loss during batch translation for ${targetLanguage}. Expected ~${sourceEntries.length}, Got ${Object.keys(finalTranslatedObject).length}`);
-                  // Decide if this constitutes an error or just partial success
              }
             translationCache.set(cacheKey, finalTranslatedObject);
             console.log(`Stored batched Gemini result for ${targetLanguage} in server cache.`);
             return NextResponse.json(finalTranslatedObject, { headers: responseHeaders });
         } else {
             console.error(`Gemini batch translation for ${targetLanguage} failed. Returning fallback.`);
-             // Return original English texts as fallback since batches failed
             return NextResponse.json(texts, { status: 500, headers: responseHeaders });
         }
 
-    } catch (error) { // Catch outer errors like initial request parsing
+    } catch (error) {
         console.error('API Route general error:', error);
          if (error instanceof SyntaxError) { return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 }); }
         return NextResponse.json({ error: 'Translation failed due to internal server error' }, { status: 500 });

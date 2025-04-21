@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Search, Video, CheckCircle, Lock, Star, BarChart, Clock, Zap, MessageSquare, Sparkles } from "lucide-react"; // Removed unused icons
+import { BookOpen, Search, Video, CheckCircle, Lock, Star, BarChart, Clock, Zap, MessageSquare, } from "lucide-react"; // Removed unused icons
 import { useLanguage } from "@/contexts/language-context";
 import { cn } from "@/lib/utils";
 

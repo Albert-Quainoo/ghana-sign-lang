@@ -13,7 +13,7 @@ export function ScrollToTop() {
    
     scrolledPathnameRef.current = pathname;
   
-  }, []); 
+  }, [pathname]); 
 
  
   useEffect(() => {
