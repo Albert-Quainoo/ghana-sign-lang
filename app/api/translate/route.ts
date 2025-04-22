@@ -118,7 +118,6 @@ export async function POST(request: NextRequest) {
         const sourceEntries = Object.entries(texts);
         let finalTranslatedObject: Record<string, string> = {};
         let overallSuccess = true;
-        let totalProcessedCount = 0;
 
         for (let i = 0; i < sourceEntries.length; i += (TEXT_BATCH_SIZE * PARALLEL_CHUNK_SIZE)) {
             const chunkStartIdx = i;
@@ -166,7 +165,6 @@ export async function POST(request: NextRequest) {
                 break;
             }
 
-            totalProcessedCount += currentChunkEntries.length;
 
             if (chunkEndIdx < sourceEntries.length) {
                 console.log(`Chunk completed. Waiting ${DELAY_BETWEEN_CHUNKS_MS}ms before next chunk...`);
