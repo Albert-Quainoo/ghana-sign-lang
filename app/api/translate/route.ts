@@ -1,39 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 
+// --- Google AI Gemini Configuration ---
 const googleApiKey = process.env.GOOGLE_AI_API_KEY;
 const geminiModelName = 'gemini-2.0-flash';
 const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${googleApiKey}`;
+// --- End Google AI Configuration ---
 
-if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) { console.error("CRITICAL: Upstash Redis environment variables missing."); }
-const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL || '', token: process.env.UPSTASH_REDIS_REST_TOKEN || '' });
+// --- Upstash Redis Configuration ---
+if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    console.error("CRITICAL: Upstash Redis environment variables missing. Caching disabled.");
+}
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
 const CACHE_TTL_SECONDS = 6 * 3600;
+// --- End Upstash Configuration ---
+
 
 if (!googleApiKey) { console.error("CRITICAL: GOOGLE_AI_API_KEY missing."); }
 
+// --- Type definitions ---
 interface SafetyRating { category: string; probability: string; }
 interface GeminiPart { text: string; }
 interface GeminiContent { parts: GeminiPart[]; role: string; }
 interface GeminiCandidate { content: GeminiContent; finishReason: string; index: number; safetyRatings: SafetyRating[]; }
 interface GeminiApiResponse { candidates: GeminiCandidate[]; promptFeedback?: unknown; error?: { code: number; message: string; status: string }; }
 
+// --- Prompt Builder ---
 function buildTranslationPrompt(sourceTexts: Record<string, string>, targetLangCode: string, sourceLangCode: string = 'en'): string {
     const sourceJsonString = JSON.stringify(sourceTexts);
-    return `
-TASK: Translate the string values within the following JSON object from the source language "${sourceLangCode}" to the target language "${targetLangCode}".
-INSTRUCTIONS:
-1. Identify ALL string values in the INPUT JSON provided below.
-2. Translate ONLY these string values to the target language: ${targetLangCode}. Retain original HTML tags or placeholders like {{variable}} if present.
-3. Keep ALL original keys EXACTLY the same.
-4. Maintain the original JSON structure precisely.
-5. Output ONLY the complete, valid JSON object containing the translated values.
-6. DO NOT include any introductory text, explanations, concluding remarks, or markdown formatting like \`\`\`json before or after the JSON object in your response. Just the raw JSON.
-INPUT JSON:
-${sourceJsonString}
-TRANSLATED JSON OUTPUT:
-`;
+    // Keep prompt concise
+    return `TASK: Translate string values in JSON from ${sourceLangCode} to ${targetLangCode}. Maintain keys and structure. Output ONLY valid JSON. INPUT JSON: ${sourceJsonString} TRANSLATED JSON OUTPUT:`;
 }
 
+// --- Single Batch Translation Function ---
 async function translateBatch(
     batchTexts: Record<string, string>,
     targetLanguage: string,
@@ -54,7 +56,7 @@ async function translateBatch(
         const errorStatus = geminiResponse.status;
         const errorData = await geminiResponse.json().catch(() => ({ message: "Failed to parse error response" }));
         console.error(`Gemini API Error on batch ${batchNumber} (${errorStatus}) for lang ${targetLanguage}:`, JSON.stringify(errorData));
-        if(errorStatus === 429) { console.warn(`Gemini Rate Limit hit on batch ${batchNumber} for ${targetLanguage}.`); }
+        if(errorStatus === 429) { console.warn(`Gemini Rate Limit hit on batch ${batchNumber} for ${targetLanguage}. Consider delay or larger batches.`); }
         throw new Error(`Batch ${batchNumber} failed: ${errorStatus}`);
     }
 
@@ -64,7 +66,6 @@ async function translateBatch(
        console.error(`Gemini API returned error on batch ${batchNumber} for ${targetLanguage}:`, JSON.stringify(geminiResult.error));
        throw new Error(`Gemini functional error on batch ${batchNumber}: ${geminiResult.error.message}`);
     }
-
     if (!geminiResult.candidates?.[0]?.content?.parts?.[0]?.text) {
        console.error(`Invalid Gemini response structure on batch ${batchNumber}:`, JSON.stringify(geminiResult).substring(0, 500));
        throw new Error(`Invalid response structure on batch ${batchNumber}`);
@@ -74,12 +75,12 @@ async function translateBatch(
     const cleanedJsonString = generatedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
 
     try {
-        const batchTranslatedObject: Record<string, string> = JSON.parse(cleanedJsonString);
+        const batchTranslatedObject = JSON.parse(cleanedJsonString);
         if (typeof batchTranslatedObject !== 'object' || batchTranslatedObject === null) {
              throw new Error(`Parsed batch ${batchNumber} result is not an object.`);
         }
         console.log(`Successfully processed batch ${batchNumber} for ${targetLanguage}.`);
-        return batchTranslatedObject;
+        return batchTranslatedObject as Record<string, string>;
     } catch (parseError) {
          console.error(`Failed to parse JSON response from Gemini for batch ${batchNumber} (${targetLanguage}). Error:`, parseError);
          console.error("Gemini Raw Response Text (Batch):", generatedText.substring(0, 500));
@@ -87,9 +88,10 @@ async function translateBatch(
     }
 }
 
+// --- Main POST Handler ---
 export async function POST(request: NextRequest) {
+    // Check required env vars first
     if (!googleApiKey || !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-        console.error("Missing necessary environment variables for Google AI or Upstash Redis.");
         return NextResponse.json({ error: 'Translator or Cache service not configured on server.' }, { status: 500 });
     }
 
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
         const { texts, targetLanguage } = body;
         const sourceLanguage = 'en';
 
+        // Validate input
         if (!texts || typeof texts !== 'object' || Object.keys(texts).length === 0 || !targetLanguage) {
             return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
         }
@@ -110,6 +113,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(texts);
         }
 
+        // Check Upstash Cache
         const cacheKey = `gemini_translation:${sourceLanguage}:${targetLanguage}`;
         try {
             console.log(`Checking Upstash cache for key: ${cacheKey}`);
@@ -125,32 +129,39 @@ export async function POST(request: NextRequest) {
              console.error(`Upstash Redis get error for key ${cacheKey}:`, redisError);
         }
 
-        console.log(`Cache miss for ${targetLanguage}. Calling Gemini API in parallel batches...`);
+        // --- Sequential Batching Logic ---
+        console.log(`Cache miss for ${targetLanguage}. Calling Gemini API sequentially...`);
         const sourceEntries = Object.entries(texts);
-        const batchSize = 40;
-        const batches: Record<string, string>[] = [];
-        for (let i = 0; i < sourceEntries.length; i += batchSize) { batches.push(Object.fromEntries(sourceEntries.slice(i, i + batchSize)) as Record<string, string>); }
-        const batchPromises = batches.map((batchTexts, index) => translateBatch(batchTexts, targetLanguage, sourceLanguage, index + 1));
-        const results = await Promise.allSettled(batchPromises);
-
+        const batchSize = 40; 
         let finalTranslatedObject: Record<string, string> = {};
         let overallSuccess = true;
+        const totalBatches = Math.ceil(sourceEntries.length / batchSize);
 
-        results.forEach((result, index) => {
-            if (result.status === 'fulfilled') {
-                finalTranslatedObject = { ...finalTranslatedObject, ...(result.value as Record<string, string>) };
-            } else {
-                console.error(`Batch ${index + 1} failed:`, result.reason);
+        for (let i = 0; i < sourceEntries.length; i += batchSize) {
+            const batchEntries = sourceEntries.slice(i, i + batchSize);
+            const batchSourceTexts = Object.fromEntries(batchEntries);
+            const batchNumber = Math.floor(i / batchSize) + 1;
+
+            console.log(`Starting batch ${batchNumber}/${totalBatches} for ${targetLanguage}...`);
+            try {
+                const batchResult = await translateBatch(batchSourceTexts as Record<string, string>, targetLanguage, sourceLanguage, batchNumber);
+                finalTranslatedObject = { ...finalTranslatedObject, ...batchResult };
+
+
+            } catch (batchError) {
+                console.error(`Stopping translation due to error in batch ${batchNumber} for ${targetLanguage}:`, batchError);
                 overallSuccess = false;
+                break;
             }
-        });
+        } // End sequential loop
+        // --- End Sequential Batching Logic ---
 
         const responseHeaders = new Headers();
         responseHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}, s-maxage=${CACHE_TTL_SECONDS}`);
         responseHeaders.set('X-Translation-Cache', 'MISS');
 
         if (overallSuccess) {
-            console.log(`Gemini parallel batch translation for ${targetLanguage} completed successfully.`);
+            console.log(`Sequential batch translation for ${targetLanguage} completed successfully.`);
              if (Object.keys(finalTranslatedObject).length < sourceEntries.length * 0.9) {
                   console.warn(`Potential key loss during batch translation for ${targetLanguage}.`);
              }
@@ -163,7 +174,7 @@ export async function POST(request: NextRequest) {
              }
             return NextResponse.json(finalTranslatedObject, { headers: responseHeaders });
         } else {
-            console.error(`Gemini parallel batch translation failed for ${targetLanguage}. Returning fallback.`);
+            console.error(`Sequential batch translation failed for ${targetLanguage}. Returning fallback.`);
             return NextResponse.json(texts, { status: 500, headers: responseHeaders });
         }
 
