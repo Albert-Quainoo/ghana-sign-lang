@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     try {
         body = await request.json();
         const { targetLanguage } = body;
-        const sourceLanguage = 'en';
 
         // Validate input
         if (!targetLanguage) { return NextResponse.json({ error: 'Invalid request body: targetLanguage missing' }, { status: 400 }); }
