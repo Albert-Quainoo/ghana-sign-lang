@@ -1,14 +1,16 @@
-// --- START OF FILE app/api/translate/route.ts ---
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 
 // --- Upstash Redis Configuration ---
-if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    console.error("CRITICAL: Upstash Redis environment variables missing.");
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+if (!redisUrl || !redisToken) {
+    console.error("CRITICAL: Upstash Redis environment variables UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN are missing.");
 }
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+  url: redisUrl || '',
+  token: redisToken || '',
 });
 // --- End Upstash Configuration ---
 
@@ -16,57 +18,69 @@ const redis = new Redis({
 import enTranslations from '../../../locales/en.json'; 
 
 export async function POST(request: NextRequest) {
-    // Check Redis config
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-        console.error("Redis client not configured properly in this instance.");
-        return NextResponse.json(enTranslations, { status: 500, headers: {'X-Translation-Source': 'Fallback (Redis Config Error)'} });
+     if (!redisUrl || !redisToken) {
+        console.error("Redis environment variables not available in this function execution. Returning fallback.");
+        return NextResponse.json(enTranslations, { status: 503, headers: {'X-Translation-Cache': 'DISABLED'} });
     }
+
+    // --- Define Cache TTL INSIDE the handler ---
+    const CACHE_TTL_SECONDS = 6 * 3600; // 6 hours TTL
+    // ---
 
     let body;
     try {
         body = await request.json();
         const { targetLanguage } = body;
+        const sourceLanguage = 'en';
 
-        // Basic validation
-        if (!targetLanguage) {
-            return NextResponse.json({ error: 'Invalid request body: targetLanguage missing' }, { status: 400 });
-        }
+        // Validate input
+        if (!targetLanguage) { return NextResponse.json({ error: 'Invalid request body: targetLanguage missing' }, { status: 400 }); }
         const supportedLanguages = ['en', 'fr', 'es', 'ar', 'tw'];
-        if (!supportedLanguages.includes(targetLanguage)) {
-             return NextResponse.json({ error: `Unsupported target language: ${targetLanguage}` }, { status: 400 });
-        }
+        if (!supportedLanguages.includes(targetLanguage)) { return NextResponse.json({ error: `Unsupported target language: ${targetLanguage}` }, { status: 400 }); }
 
-        if (targetLanguage === 'en') {
-            return NextResponse.json(enTranslations, { headers: {'X-Translation-Source': 'Direct (English)'} });
-        }
-        if (targetLanguage === 'tw') {
-            console.warn("Returning English fallback for Twi request.");
-            return NextResponse.json(enTranslations, { headers: {'X-Translation-Source': 'Fallback (Twi)'} });
-        }
+        if (targetLanguage === 'en') { return NextResponse.json(enTranslations, { headers: {'X-Translation-Source': 'Direct (English)'} }); }
+        if (targetLanguage === 'tw') { console.warn("Returning English fallback for Twi request."); return NextResponse.json(enTranslations, { headers: {'X-Translation-Source': 'Fallback (Twi)'} }); }
 
+        // Check Upstash Cache
         const cacheKey = `translations:${targetLanguage}`;
         let translationData: Record<string, string> | null = null;
         let cacheStatus: 'HIT' | 'MISS' | 'ERROR' = 'MISS';
 
         try {
             console.log(`Checking Upstash cache for key: ${cacheKey}`);
-            const cachedString = await redis.get<string>(cacheKey);
+            const cachedData = await redis.get<unknown>(cacheKey);
 
-            if (cachedString) {
-                try {
-                    translationData = JSON.parse(cachedString); // Parse JSON from Redis
-                    if (typeof translationData === 'object' && translationData !== null) {
-                        console.log(`Returning cached Upstash result for ${targetLanguage}`);
-                        cacheStatus = 'HIT';
-                    } else {
-                         console.error(`Invalid JSON structure in cache for ${cacheKey}.`);
-                         translationData = null; 
-                         cacheStatus = 'MISS';
+            if (cachedData !== null && cachedData !== undefined) {
+                if (typeof cachedData === 'string') {
+                    console.log(`Parsing string found in cache for ${targetLanguage}...`);
+                    try {
+                        translationData = JSON.parse(cachedData);
+                        if (typeof translationData === 'object' && translationData !== null) {
+                             cacheStatus = 'HIT';
+                        } else {
+                             console.error(`Parsed data for ${cacheKey} is not a valid object.`);
+                             translationData = null;
+                             cacheStatus = 'ERROR';
+                        }
+                    } catch (parseError) {
+                        console.error(`Failed to parse cached JSON string for ${cacheKey}:`, parseError);
+                        cacheStatus = 'ERROR';
+                        translationData = null;
                     }
-                } catch (parseError) {
-                     console.error(`Failed to parse cached JSON for ${cacheKey}:`, parseError);
-                     translationData = null;
-                     cacheStatus = 'MISS';
+                } else if (typeof cachedData === 'object') {
+                     console.warn(`Data from cache for ${cacheKey} was already an object. Using directly.`);
+                     if (cachedData !== null && Object.keys(cachedData).length > 0) {
+                        translationData = cachedData as Record<string, string>;
+                        cacheStatus = 'HIT';
+                     } else {
+                         console.error(`Cached object for ${cacheKey} is null or empty.`);
+                         translationData = null;
+                         cacheStatus = 'ERROR';
+                     }
+                } else {
+                    console.error(`Unexpected data type found in cache for ${cacheKey}: ${typeof cachedData}`);
+                    cacheStatus = 'ERROR';
+                    translationData = null;
                 }
             } else {
                  console.warn(`Cache MISS for ${targetLanguage} (Key: ${cacheKey}). Returning English fallback.`);
@@ -75,27 +89,26 @@ export async function POST(request: NextRequest) {
         } catch (redisError) {
              console.error(`Upstash Redis get error for key ${cacheKey}:`, redisError);
              cacheStatus = 'ERROR';
-      
         }
-        // --- End Cache Check ---
-
-        // --- Determine Response ---
-        const responseData = translationData ?? enTranslations; 
-        const responseStatus = translationData ? 200 : 503; 
         const responseHeaders = new Headers();
-        if (cacheStatus === 'HIT') {
-             responseHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600'); // Cache hit longer
-        } else {
-             responseHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=60'); // Cache miss/error shorter
-        }
         responseHeaders.set('X-Translation-Cache', cacheStatus);
 
-        return NextResponse.json(responseData, { status: responseStatus, headers: responseHeaders });
+        if (cacheStatus === 'HIT' && translationData) {
+             console.log(`Returning valid cached result for ${targetLanguage}`);
+             responseHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}, s-maxage=${CACHE_TTL_SECONDS}`);
+             return NextResponse.json(translationData, { headers: responseHeaders });
+        } else {
+             console.log(`Cache status is ${cacheStatus}. Returning English fallback for ${targetLanguage}.`);
+             responseHeaders.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+             const status = (cacheStatus === 'ERROR') ? 503 : 200;
+             return NextResponse.json(enTranslations, { headers: responseHeaders, status: status });
+        }
 
     } catch (error) {
         console.error('API Route general error:', error);
-         if (error instanceof SyntaxError) { return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 }); }
-        return NextResponse.json(enTranslations, { status: 500, headers: {'X-Translation-Cache': 'ERROR'} });
+         const headers = new Headers({'X-Translation-Cache': 'ERROR'});
+         if (error instanceof SyntaxError) { return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400, headers }); }
+        return NextResponse.json(enTranslations, { status: 500, headers });
     }
 }
 
