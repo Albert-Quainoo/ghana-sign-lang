@@ -32,57 +32,58 @@ ${JSON.stringify(sourceTexts, null, 2)}
 async function translateBatch(
     batchTexts: Record<string, string>,
     targetLanguage: string,
-    sourceLanguage: string,
+    sourceLanguage: string = 'en',
     batchNumber: number
 ): Promise<Record<string, string>> {
-    // Build the prompt for Gemini API
+    console.log(`Processing batch ${batchNumber} for ${targetLanguage} with Gemini...`);
     const prompt = buildTranslationPrompt(batchTexts, targetLanguage, sourceLanguage);
+    const geminiRequestBody = { contents: [{ parts: [{ text: prompt }] }] };
 
-    const requestBody = {
-        contents: [
-            {
-                parts: [{ text: prompt }],
-                role: "user"
-            }
-        ]
-    };
+    const geminiResponse = await fetch(geminiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiRequestBody),
+    });
+
+    if (!geminiResponse.ok) {
+        // ... existing error handling ...
+         const errorStatus = geminiResponse.status;
+         const errorData = await geminiResponse.json().catch(() => ({ message: "Failed to parse error response" }));
+         console.error(`Gemini API Error on batch ${batchNumber} (${errorStatus}) for lang ${targetLanguage}:`, JSON.stringify(errorData));
+         if(errorStatus === 429) { console.warn(`Gemini Rate Limit hit on batch ${batchNumber} for ${targetLanguage}.`); }
+         throw new Error(`Batch ${batchNumber} failed: ${errorStatus}`);
+    }
+
+    const geminiResult: GeminiApiResponse = await geminiResponse.json();
+
+    if (geminiResult.error) {}
+    if (!geminiResult.candidates?.[0]?.content?.parts?.[0]?.text) {}
+
+    const generatedText = geminiResult.candidates[0].content.parts[0].text;
 
     try {
-        const response = await fetch(geminiEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
+        const jsonStart = generatedText.indexOf('{');
+        const jsonEnd = generatedText.lastIndexOf('}');
 
-        if (!response.ok) {
-            console.error(`Gemini API batch ${batchNumber} failed:`, response.status, await response.text());
-            throw new Error(`Gemini API error: ${response.status}`);
+        if (jsonStart === -1 || jsonEnd === -1 || jsonEnd < jsonStart) {
+            console.error(`Could not find valid JSON object delimiters '{' and '}' in Gemini response for batch ${batchNumber} (${targetLanguage}).`);
+            console.error("Gemini Raw Response Text (Batch):", generatedText.substring(0, 500));
+            throw new Error(`Valid JSON object not found in response for batch ${batchNumber}`);
         }
 
-        const data: GeminiApiResponse = await response.json();
+        const potentialJson = generatedText.substring(jsonStart, jsonEnd + 1);
 
-        if (data.error) {
-            console.error(`Gemini API batch ${batchNumber} error:`, data.error);
-            throw new Error(data.error.message);
+        const batchTranslatedObject = JSON.parse(potentialJson);
+
+        if (typeof batchTranslatedObject !== 'object' || batchTranslatedObject === null) {
+             throw new Error(`Parsed batch ${batchNumber} result is not an object.`);
         }
-
-        const candidate = data.candidates && data.candidates[0];
-        if (!candidate || !candidate.content || !candidate.content.parts || !candidate.content.parts[0].text) {
-            throw new Error('Invalid Gemini API response structure');
-        }
-
-        let translations: Record<string, string> = {};
-        try {
-            translations = JSON.parse(candidate.content.parts[0].text);
-        } catch (parseError) {
-            console.error('Failed to parse Gemini translation response:', candidate.content.parts[0].text);
-            throw parseError;
-        }
-
-        return translations;
-    } catch (error) {
-        console.error(`translateBatch error (batch ${batchNumber}):`, error);
-        throw error;
+        console.log(`Successfully processed batch ${batchNumber} for ${targetLanguage}.`);
+        return batchTranslatedObject as Record<string, string>;
+    } catch (parseError) {
+         console.error(`Failed to parse potential JSON from Gemini for batch ${batchNumber} (${targetLanguage}). Error:`, parseError);
+         console.error("Gemini Raw Response Text (Batch):", generatedText.substring(0, 500)); 
+         throw new Error(`JSON parsing failed for batch ${batchNumber}`);
     }
 }
 // --- End Types and Helpers ---
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
         const cacheKey = `gemini_translation:${sourceLanguage}:${targetLanguage}`;
         try {
             const cachedResult = await redis.get<Record<string, string>>(cacheKey);
-            if (cachedResult) { /* ... return cached result ... */ }
+            if (cachedResult) {}
         } catch (redisError) { console.error(`Upstash Redis get error for key ${cacheKey}:`, redisError); }
 
 
