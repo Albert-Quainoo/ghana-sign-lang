@@ -9,7 +9,7 @@ import { LanguageProvider } from "@/contexts/language-context";
 import { SiteHeader } from "@/components/site-header"; 
 import { SiteFooter } from "@/components/site-footer"; 
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: {
@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Responsive viewport meta tag for scaling */}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
         {/* Grammarly Hydration Fix Script */}
         <Script id="hydration-fix" strategy="beforeInteractive">
           {`

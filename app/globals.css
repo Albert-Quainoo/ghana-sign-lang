@@ -138,13 +138,11 @@
     min-height: 100vh;
     background-attachment: fixed;
     background-size: 200% 200%;
-    animation: gradientShift 15s ease infinite;
     min-width: 0;
   }
   /* Improved text legibility for all content */
   p, li, div {
     @apply text-foreground;
-    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
   }
   /* Ensure headings have good contrast */
   h1, h2, h3, h4, h5, h6 {

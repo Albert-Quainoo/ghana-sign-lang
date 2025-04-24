@@ -89,7 +89,7 @@ export default function Home() {
               <p className="max-w-[700px] mx-auto text-center text-muted-foreground md:text-xl/relaxed text-enhanced">{isLoading ? fallbacks.heroSubtitle : <span suppressHydrationWarning>{t("home.hero.subtitle") ?? fallbacks.heroSubtitle}</span>}</p>
               <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center pt-4">
                 <Link href="/sign-up" scroll={true}><Button size="lg" className="btn-gradient">{isLoading ? fallbacks.heroCtaStart : <span suppressHydrationWarning>{t("home.hero.cta.start") ?? fallbacks.heroCtaStart}</span>}</Button></Link>
-                <Link href="/learn" scroll={true}><Button variant="outline" size="lg" className="btn-secondary">{isLoading ? fallbacks.heroCtaExplore : <span suppressHydrationWarning>{t("home.hero.cta.explore") ?? fallbacks.heroCtaExplore}</span>}</Button></Link>
+                <Link href="/learn?tab=resources" scroll={true}><Button variant="outline" size="lg" className="btn-secondary">{isLoading ? fallbacks.heroCtaExplore : <span suppressHydrationWarning>{t("home.hero.cta.explore") ?? fallbacks.heroCtaExplore}</span>}</Button></Link>
               </div>
             </div>
           </div>

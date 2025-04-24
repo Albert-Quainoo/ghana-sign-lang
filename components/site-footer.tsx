@@ -42,7 +42,7 @@ export function SiteFooter({ className }: { className?: string }) {
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <Headphones className="h-6 w-6 text-pink-500" />
             <span className="font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent" suppressHydrationWarning>
-              {isLoading ? fallbacks.brandName : t("nav.brand") ?? fallbacks.brandName}
+              <span>Signed-in </span>
             </span>
           </Link>
           <p className="text-sm text-muted-foreground">

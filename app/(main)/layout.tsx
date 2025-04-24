@@ -7,7 +7,7 @@ export default function MainLayout({
 }>) {
   return (
     // This layout simply passes children through, root layout handles header/footer
-    <div className="relative">
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* First blob - pink */}
       <div className="fixed -top-24 -left-24 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       {/* Second blob - purple */}
