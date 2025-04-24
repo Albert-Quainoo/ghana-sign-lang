@@ -266,7 +266,7 @@ export function SiteHeader({ className }: { className?: string }) {
   const currentPathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { t, language, setLanguage, isLoading, isLanguageAvailable } = useLanguage()
+  const { t, language, setLanguage, isLoading} = useLanguage()
   const navRef = useRef<HTMLElement>(null)
   const [navItems, setNavItems] = useState<NavItem[]>(initialNavItems)
 
