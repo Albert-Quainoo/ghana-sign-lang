@@ -1,6 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Node modules and package managers
+# dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,41 +10,39 @@
 !.yarn/releases
 !.yarn/versions
 
-# Build and output directories
-/.next/
-/out/
-/build
-
-# Coverage and test output
+# testing
 /coverage
 
-# Miscellaneous system files
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
 .DS_Store
 *.pem
 
-# Debug logs
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Local environment files
+# env files 
 .env.local
 
-# Vercel deployment
+# vercel
 .vercel
 
-# TypeScript build info and generated types
+# typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Scripts and caches
 /scripts
+
+#javascript
 seed-cache.mjs
-
-# Firebase local files
+.vercel
 .firebase
-
-# Ignore .next/package.json (Next.js output)
-.next/package.json
 
