@@ -16,7 +16,7 @@ export default function AboutPage() {
               <h1 className="heading-1 gradient-text-hero">
                 <span suppressHydrationWarning>{t("about.title")}</span>
               </h1>
-              <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed text-enhanced">
+              <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl/relaxed text-enhanced">
                 <span suppressHydrationWarning>{t("about.subtitle")}</span>
               </p>
             </div>
@@ -101,20 +101,13 @@ export default function AboutPage() {
                 <span suppressHydrationWarning>{t("about.join.description")}</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-                <Link href="/learn" scroll={true}>
-                  <Button
-                    size="lg"
-                    className="bg-white/90 text-purple-600 btn-gradient"
-                  >
+                <Link href="/learn" scroll={true} className="w-full sm:w-auto">
+                  <Button size="lg" className="bg-white/90 text-purple-600 btn-gradient w-full sm:w-auto">
                     <span suppressHydrationWarning>{t("about.join.button1")}</span>
                   </Button>
                 </Link>
-                <Link href="/contact" scroll={true}>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="btn-outline prismatic-glow"
-                  >
+                <Link href="/contact" scroll={true} className="w-full sm:w-auto">
+                  <Button variant="outline" size="lg" className="btn-outline prismatic-glow w-full sm:w-auto">
                     <span suppressHydrationWarning>{t("about.join.button2")}</span>
                   </Button>
                 </Link>

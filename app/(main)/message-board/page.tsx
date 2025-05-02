@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-// Removed Image import as it's unused
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

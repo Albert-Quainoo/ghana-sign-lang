@@ -6,8 +6,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { LanguageProvider } from "@/contexts/language-context";
-import { SiteHeader } from "@/components/site-header"; 
-import { SiteFooter } from "@/components/site-footer"; 
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { AuthProvider } from "@/contexts/auth-context";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -58,7 +59,6 @@ export default function RootLayout({
               if (typeof MutationObserver !== 'undefined') {
                 var observer = new MutationObserver(removeGrammarlyAttributes);
                 var observerConfig = { attributes: true, childList: true, subtree: true, attributeFilter: ['data-gr-ext-installed', 'data-new-gr-c-s-check-loaded']};
-                // Observe documentElement instead of body initially, as body might not exist yet
                  if(document.documentElement) {
                      observer.observe(document.documentElement, observerConfig);
                  }
@@ -71,14 +71,19 @@ export default function RootLayout({
         className={`${inter.className} flex flex-col min-h-screen w-full noise-bg`}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          {/* LanguageProvider wraps the main content */}
           <LanguageProvider>
-            <SiteHeader className="glass-card" /> 
-            <main className="flex-1">
-              {children}
-            </main>
-            <ScrollToTop /> {/* Component for handling scroll */}
-            <SiteFooter /> {/* Removed potentially conflicting class */}
+            <AuthProvider>
+              {}
+              <>
+                <SiteHeader />
+                <main className="flex-1">
+                  {children}
+                </main>
+                <ScrollToTop />
+                <SiteFooter />
+              </>
+              {}
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>
