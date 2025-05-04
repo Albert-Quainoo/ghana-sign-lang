@@ -1,114 +1,180 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-// Removed Image import as it's unused
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, type ChangeEvent} from "react"; 
+import { useLanguage } from "@/contexts/language-context";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Users, BookOpen, Search, PlusCircle, ThumbsUp, MessageCircle as MessageIcon, Clock, Filter, ChevronRight, Volume2, Eye } from "lucide-react"; // Removed EyeOff
-import { useLanguage } from "@/contexts/language-context";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { Progress } from "@/components/ui/progress";
+import { MessageSquare, Users, BookOpen, Search, PlusCircle, MessageCircleIcon as MessageIcon, Clock, Filter, ChevronRight, Volume2, Eye, Menu, X, AlertCircle, Edit, Trash2, Heart, Paperclip, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth, type User } from "@/contexts/auth-context";
+import { useMediaQuery } from "@/hooks/use-mobile";
+import { db, storage } from "@/lib/config";
+import { collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp, QueryConstraint, deleteDoc, doc, documentId, getDoc, updateDoc, increment, arrayUnion, arrayRemove, onSnapshot } from "firebase/firestore";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog";
+import { Discussion } from "@/types/community";
 
-const mockDiscussions = [
-  { id: 1, title: "Tips for learning finger spelling faster?", category: "learning", author: "Kofi Mensah", authorAvatar: "KM", date: "2 days ago", replies: 8, likes: 12, excerpt: "I'm struggling with finger spelling speed. Any tips or exercises that helped you improve your speed and accuracy?", tags: ["Beginner", "Finger Spelling", "Practice"] },
-  { id: 2, title: "Resources for teaching GSL to young children", category: "support", author: "Ama Owusu", authorAvatar: "AO", date: "1 week ago", replies: 15, likes: 24, excerpt: "I'm looking for age-appropriate resources to teach my 5-year-old GSL. Any recommendations for games, videos, or activities?", tags: ["Children", "Teaching", "Resources"] },
-  { id: 3, title: "Difference between GSL and ASL signs for common phrases", category: "learning", author: "Kwame Takyi", authorAvatar: "KT", date: "3 days ago", replies: 6, likes: 9, excerpt: "I previously learned some ASL and now I'm learning GSL. I've noticed some differences in common signs. Can someone explain the major differences?", tags: ["Intermediate", "Comparison", "ASL"] },
-  { id: 4, title: "Meetup for GSL practice in Accra - Weekly sessions", category: "support", author: "Nana Ama", authorAvatar: "NA", date: "5 days ago", replies: 22, likes: 35, excerpt: "We're organizing weekly practice sessions in Accra for GSL learners of all levels. Join us every Saturday at the community center!", tags: ["Meetup", "Practice", "Accra"] },
-  { id: 5, title: "How to express complex emotions in GSL?", category: "learning", author: "Yaw Mensah", authorAvatar: "YM", date: "1 day ago", replies: 4, likes: 7, excerpt: "I'm finding it challenging to express nuanced emotions in GSL. Are there specific facial expressions or modifiers that help convey subtle feelings?", tags: ["Advanced", "Emotions", "Expressions"] },
-  { id: 6, title: "Support group for parents of deaf children", category: "support", author: "Abena Koranteng", authorAvatar: "AK", date: "2 weeks ago", replies: 18, likes: 29, excerpt: "I'm starting a support group for parents of deaf children. We'll share experiences, resources, and tips for creating an inclusive home environment.", tags: ["Parents", "Support Group", "Community"] }
-];
 
-// Fallback Texts
-const fallbacks = {
-    title: "Community Message Board",
-    subtitle: "Connect with other GSL learners, share experiences, and get support from our community.",
-    sidebarJoinTitle: "Join the Conversation",
-    sidebarJoinDesc: "Share your questions and experiences",
-    sidebarJoinButton: "New Discussion",
-    sidebarTagsTitle: "Popular Tags",
-    sidebarAccessTitle: "Accessibility Options",
-    searchPlaceholder: "Search discussions...",
-    search: "Search",
-    filter: "Filter",
-    sortBy: "Sort By",
-    mostRecent: "Most Recent",
-    mostPopular: "Most Popular",
-    filterByTags: "Filter By Tags",
-    applyFilters: "Apply Filters",
-    tabsAll: "All Discussions",
-    tabsLearning: "Learning Questions",
-    tabsSupport: "Community Support",
-    noDiscussionsTitle: "No discussions found",
-    noDiscussionsDesc: "Try adjusting your search or filters",
-    noLearningTitle: "No learning questions found",
-    noLearningDesc: "Be the first to ask a question!",
-    noSupportTitle: "No support discussions found",
-    noSupportDesc: "Start a new support thread!",
-    newDiscussionSidebarTitle: "Create Discussion",
-    newDiscussionSidebarDesc: "Share your thoughts with the community",
-    newDiscussionSidebarGuideTitle: "Guidelines:",
-    newDiscussionSidebarGuide1: "Be respectful and inclusive",
-    newDiscussionSidebarGuide2: "Use clear, descriptive titles",
-    newDiscussionSidebarGuide3: "Add relevant tags to help others find your post",
-    newDiscussionSidebarGuide4: "Check if your question has been asked before",
-    newDiscussionFormTitle: "New Discussion",
-    newDiscussionFormTitleLabel: "Title",
-    newDiscussionFormTitlePlaceholder: "Enter a descriptive title for your discussion",
-    newDiscussionFormCatLabel: "Category",
-    newDiscussionFormCatLearning: "Learning Question",
-    newDiscussionFormCatSupport: "Community Support",
-    newDiscussionFormContentLabel: "Content",
-    newDiscussionFormContentPlaceholder: "Describe your question or share your thoughts in detail...",
-    newDiscussionFormTagsLabel: "Tags",
-    newDiscussionFormSubmit: "Post Discussion",
-    ctaTitle: "Join Our Community",
-    ctaDesc: "Sign up to participate in discussions, ask questions, and connect with other GSL learners.",
-    ctaButton1: "Create an Account",
-    ctaButton2: "Sign In",
-    cancel: "Cancel",
-    previous: "Previous",
-    next: "Next",
-};
+const allTags = ["Beginner", "Intermediate", "Advanced", "Practice", "Resources", "Teaching", "Community", "Finger Spelling", "Comparison", "GSL", "Meetup", "Accra", "Emotions", "Expressions", "Children", "Parents", "Support Group"];
 
-// --- Discussion Card Component ---
-function DiscussionCard({ discussion }: { discussion: (typeof mockDiscussions)[0] }) {
-  return (
-    <Card className="card-standard glass-card-content overflow-hidden">
-      <CardContent className="p-0">
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-3">
-            <Link href={`/message-board/${discussion.id}`} className="hover:underline">
-              <h3 className="text-lg font-semibold">{discussion.title}</h3>
-            </Link>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" /><span>{discussion.date}</span></div>
-          </div>
-          <p className="text-muted-foreground text-sm mb-4">{discussion.excerpt}</p>
-          <div className="flex flex-wrap gap-2 mb-4">{discussion.tags.map((tag: string) => (<span key={tag} className="text-xs bg-accent/50 px-2 py-1 rounded-full">{tag}</span>))}</div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Avatar className="h-8 w-8"><AvatarFallback>{discussion.authorAvatar}</AvatarFallback></Avatar><span className="text-sm font-medium">{discussion.author}</span></div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 text-muted-foreground"><ThumbsUp className="h-4 w-4" /><span className="text-xs">{discussion.likes}</span></div>
-              <div className="flex items-center gap-1 text-muted-foreground"><MessageIcon className="h-4 w-4" /><span className="text-xs">{discussion.replies}</span></div>
-              <Link href={`/message-board/${discussion.id}`}><Button variant="ghost" size="sm" className="text-xs flex items-center gap-1">View <ChevronRight className="h-3 w-3" /></Button></Link>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+function DiscussionCard({ discussion, t, user}: { discussion: Discussion, t: (key: string) => string | undefined, user: User | null, refetchDiscussions: () => void, updateDiscussionInList: (id: string, updates: Partial<Discussion>) => void }) {
+    const router = useRouter();
+    const formattedDate = discussion.createdAt?.toDate ? discussion.createdAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : t('common.unknownDate');
+    const canModify = user?.uid === discussion.authorId;
+    const canInteract = !!(user && user.emailVerified);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isLiking, setIsLiking] = useState(false);
+    const [internalLikeCount, setInternalLikeCount] = useState(discussion.likeCount ?? 0);
+    const [hasLiked, setHasLiked] = useState(discussion.likedBy?.includes(user?.uid ?? '') ?? false);
+    const [submitStatus, setSubmitStatus] = useState<{type:'success'|'error', message: string} | null>(null);
+
+    useEffect(() => {
+        setInternalLikeCount(discussion.likeCount ?? 0);
+        setHasLiked(discussion.likedBy?.includes(user?.uid ?? '') ?? false);
+    }, [discussion.likeCount, discussion.likedBy, user?.uid]);
+
+    const handleEdit = () => { router.push(`/message-board/${discussion.id}`); };
+    const handleDelete = async () => {
+        if (!canModify || isDeleting) return;
+        setIsDeleting(true);
+        setDeleteError(null);
+        try {
+            if (discussion.mediaURLs && discussion.mediaURLs.length > 0) {
+                for (const url of discussion.mediaURLs) {
+                    try {
+                        const fileRef = ref(storage, url);
+                        await deleteObject(fileRef);
+                    } catch (storageError) {
+                        console.warn(`Failed to delete media file ${url}:`, storageError);
+                    }
+                }
+            }
+            const postDocRef = doc(db, "discussions", discussion.id);
+            await deleteDoc(postDocRef);
+            setShowDeleteDialog(false);
+        } catch (error) {
+            console.error("Error deleting discussion:", error);
+            setDeleteError(t('community.deleteError') ?? 'Failed to delete discussion.'); // Fix: Provide fallback for t()
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+    const handleLike = async () => {
+        if (!canInteract || !user || isLiking) {
+            if(!user || !user.emailVerified) setSubmitStatus({type: 'error', message: t("community.loginToLikeTooltip")!});
+            setTimeout(()=>setSubmitStatus(null), 4000);
+            return;
+        }
+        setIsLiking(true);
+        const discussionRef = doc(db, "discussions", discussion.id);
+        const alreadyLiked = hasLiked;
+        const optimisticLikeCount = internalLikeCount + (alreadyLiked ? -1 : 1);
+        setInternalLikeCount(optimisticLikeCount);
+        setHasLiked(!alreadyLiked);
+        try {
+            await updateDoc(discussionRef, {
+                likeCount: increment(alreadyLiked ? -1 : 1),
+                likedBy: alreadyLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            });
+        } catch (error) {
+            console.error("Error updating like status:", error);
+            setInternalLikeCount(discussion.likeCount ?? 0);
+            setHasLiked(discussion.likedBy?.includes(user?.uid ?? '') ?? false);
+            setSubmitStatus({type: 'error', message: t("community.likeError")!});
+            setTimeout(()=>setSubmitStatus(null), 4000);
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
+    if (discussion.isHidden && !canModify) {
+        return null;
+    }
+
+    return (
+        <Card className={cn("card-standard glass-card-content overflow-hidden hover:shadow-lg transition-shadow duration-200", discussion.isHidden && canModify && "border-orange-400 border-2 opacity-75")}>
+             {submitStatus && <Alert variant={submitStatus.type === 'success' ? 'default' : 'destructive'} className="text-sm m-4 border-0"><AlertTitle>{submitStatus.type === 'success' ? t('common.successTitle') : t('common.errorTitle')}</AlertTitle><AlertDescription>{submitStatus.message}</AlertDescription></Alert>}
+            <CardContent className="p-0">
+                <div className="p-4 sm:p-6">
+                     {discussion.isHidden && canModify && ( <div className="mb-2 flex items-center gap-1.5 text-xs text-orange-600 border border-orange-200 bg-orange-50/50 rounded px-2 py-1 w-fit"> <Lock className="h-3 w-3" /> <span>{t('community.discussionHiddenByModerator')}</span> </div> )}
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4 mb-3"> <Link href={`/message-board/${discussion.id}`} className="hover:text-primary transition-colors flex-grow min-w-0"> <h3 className="text-base sm:text-lg font-semibold line-clamp-2 break-words">{discussion.title}</h3> </Link> <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0 mt-1 sm:mt-0"> <Clock className="h-3 w-3 flex-shrink-0" /> <span>{formattedDate}</span> </div> </div>
+                    <p className="text-muted-foreground text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3"> {discussion.excerpt} </p>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4"> {discussion.tags?.slice(0, 4).map((tag) => ( <span key={tag} className="text-xs bg-accent/60 px-2 py-0.5 rounded-full truncate max-w-[150px]"> {tag} </span> ))} {(discussion.tags?.length ?? 0) > 4 && <span className="text-xs text-muted-foreground py-0.5">...</span>} </div>
+                    <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0"> <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0"> <AvatarImage src={discussion.authorPhotoURL || undefined} alt={discussion.authorName} /> <AvatarFallback className="text-xs sm:text-sm">{discussion.authorInitials}</AvatarFallback> </Avatar> <span className="text-xs sm:text-sm font-medium truncate max-w-[150px] xs:max-w-none"> {discussion.authorName} </span> </div>
+                        <div className="flex items-center justify-end gap-2 sm:gap-4 flex-shrink-0">
+                            <Button variant="ghost" size="sm" className={cn("flex items-center gap-1 p-1 h-auto text-muted-foreground text-xs", hasLiked && "text-red-500 hover:text-red-600")} onClick={handleLike} disabled={isLiking || !canInteract} title={canInteract ? (hasLiked ? t("community.unlikeDiscussionTooltip") : t("community.likeDiscussionTooltip")) : t("community.loginToLikeTooltip")}> <Heart className={cn("h-3.5 w-3.5", hasLiked && "fill-current")} /> <span>{internalLikeCount}</span> </Button>
+                            <div className="flex items-center gap-1 text-muted-foreground"> <MessageIcon className="h-3 w-3 sm:h-4 sm:w-4" /> <span className="text-xs">{discussion.replyCount ?? 0}</span> </div>
+                            {canModify && ( <> <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary" onClick={handleEdit} title={t('community.editPost')}> <Edit className="h-3.5 w-3.5" /> </Button>
+                                    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                                        <DialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive")} title={t('community.deletePost')}><Trash2 className="h-3.5 w-3.5" /></DialogTrigger>
+                                        <DialogContent> <DialogHeader> <DialogTitle><span suppressHydrationWarning>{t('community.deleteConfirmTitle')}</span></DialogTitle> <DialogDescription> <span suppressHydrationWarning>{t('community.deleteConfirmMessage')}</span> </DialogDescription> {deleteError && <p className="text-sm text-red-600 pt-2">{deleteError}</p>} </DialogHeader> <DialogFooter className="sm:justify-between gap-2"> <DialogClose className={cn(buttonVariants({ variant: "ghost" }), !isDeleting ? '' : 'opacity-50 cursor-not-allowed')} disabled={isDeleting}> <span suppressHydrationWarning>{t("common.cancel")}</span> </DialogClose> <Button type="button" variant="destructive" onClick={handleDelete} disabled={isDeleting}> {isDeleting && <LoadingSpinner size="sm" className="mr-2" />} <span suppressHydrationWarning>{isDeleting ? t('community.deleteLoading') : t('community.deleteConfirmAction')}</span> </Button> </DialogFooter> </DialogContent>
+                                    </Dialog>
+                                </>
+                            )}
+                            <Link href={`/message-board/${discussion.id}`}> <Button variant="ghost" size="sm" className="text-xs h-7 px-2 sm:h-8 sm:px-3 flex items-center gap-1"> <span suppressHydrationWarning>{t('community.viewDiscussion')}</span> <ChevronRight className="h-3 w-3" /> </Button> </Link>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
-// --- End Discussion Card ---
 
+function Sidebar({ isLoading, t, selectedTags, toggleTag, isMobileSidebarOpen, setIsMobileSidebarOpen, allTags }: { isLoading: boolean; t: (key: string) => string | undefined; selectedTags: string[]; toggleTag: (tag: string) => void; isMobileSidebarOpen: boolean; setIsMobileSidebarOpen: (open: boolean) => void; allTags: string[] }) {
+    const isMobile = useMediaQuery("(max-width: 1023px)");
+    return (
+        <div className={cn( "lg:col-span-1 space-y-4 sm:space-y-6 min-w-0", isMobile && "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm p-4 pt-16 overflow-y-auto lg:static lg:p-0 lg:pt-0 lg:z-0 lg:bg-transparent lg:backdrop-blur-none", !isMobileSidebarOpen && isMobile && "hidden" )}>
+            {isMobile && ( <Button variant="ghost" size="icon" className="absolute top-4 right-4 rounded-full" onClick={() => setIsMobileSidebarOpen(false)}> <X className="h-5 w-5" /> <span className="sr-only"><span suppressHydrationWarning>{t('a11y.closeSidebar')}</span></span> </Button> )}
+            <Card className="card-standard glass-card-content"> <CardHeader className="pb-3"> <CardTitle className="text-base sm:text-lg"><span suppressHydrationWarning>{t("community.sidebar.join.title")}</span></CardTitle> <CardDescription><span suppressHydrationWarning>{t("community.sidebar.join.description")}</span></CardDescription> </CardHeader> <CardContent> <Button className="w-full btn-gradient" onClick={() => { document.getElementById("new-discussion")?.scrollIntoView({ behavior: "smooth" }); if (isMobile) setIsMobileSidebarOpen(false); }}> <PlusCircle className="mr-2 h-4 w-4" /> <span suppressHydrationWarning>{t("community.sidebar.join.button")}</span> </Button> </CardContent> </Card>
+            <Card className="card-standard glass-card-content"> <CardHeader className="pb-3"> <CardTitle className="text-base sm:text-lg"><span suppressHydrationWarning>{t("community.sidebar.tags.title")}</span></CardTitle> </CardHeader> <CardContent> <div className="flex flex-wrap gap-1.5 sm:gap-2"> {allTags.map((tag) => ( <Button key={tag} variant={selectedTags.includes(tag) ? "secondary": "outline"} size="sm" className={cn("text-xs rounded-full h-7 px-2.5 sm:h-8 sm:px-3")} onClick={() => toggleTag(tag)}> {tag} </Button> ))} </div> </CardContent> </Card>
+            <Card className="card-standard glass-card-content"> <CardHeader className="pb-3"> <CardTitle className="text-base sm:text-lg"><span suppressHydrationWarning>{t("community.sidebar.accessibility.title")}</span></CardTitle> </CardHeader> <CardContent className="space-y-3"> <div className="flex items-center justify-between"> <span className="text-sm"><span suppressHydrationWarning>{t("a11y.highContrast")}</span></span> <Button variant="outline" size="icon" className="h-8 w-8" aria-label={t("a11y.highContrast")}> <Eye className="h-4 w-4" /> </Button> </div> <div className="flex items-center justify-between"> <span className="text-sm"><span suppressHydrationWarning>{t("a11y.textToSpeech")}</span></span> <Button variant="outline" size="icon" className="h-8 w-8" aria-label={t("a11y.textToSpeech")}> <Volume2 className="h-4 w-4" /> </Button> </div> <div className="flex items-center justify-between"> <span className="text-sm"><span suppressHydrationWarning>{t("a11y.fontSize")}</span></span> <div className="flex gap-1"> <Button variant="outline" size="sm" className="h-8 w-8 p-0" aria-label={t("a11y.fontSizeDec")}>A-</Button> <Button variant="outline" size="sm" className="h-8 w-8 p-0" aria-label={t("a11y.fontSizeInc")}>A+</Button> </div> </div> </CardContent> </Card>
+        </div>
+    )
+}
+
+function GuidelinesCard({ t }: { t: (key: string) => string | undefined }) {
+    return (
+        <Card className="card-standard glass-card-content">
+            <CardHeader className="p-4 sm:p-6"> <CardTitle className="text-base sm:text-lg"><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.title")}</span></CardTitle> <CardDescription><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.description")}</span></CardDescription> </CardHeader>
+            <CardContent className="space-y-2 text-sm px-4 sm:px-6 pb-4 sm:pb-6">
+                <p><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guidelinesTitle")}</span></p>
+                <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline1")}</span></li>
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline2")}</span></li>
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline3")}</span></li>
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline4")}</span></li>
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline5")}</span></li>
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline6")}</span></li>
+                    <li><span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline7")}</span></li>
+                </ul>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function MessageBoardPage() {
-  const { t, isLoading } = useLanguage();
+  const { t, isLoading: isLanguageLoading } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const filterParam = searchParams?.get('filter');
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredDiscussions, setFilteredDiscussions] = useState(mockDiscussions);
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [isFetchingDiscussions, setIsFetchingDiscussions] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
@@ -117,330 +183,328 @@ export default function MessageBoardPage() {
   const [newDiscussionContent, setNewDiscussionContent] = useState("");
   const [newDiscussionCategory, setNewDiscussionCategory] = useState<"learning" | "support" | "">("");
   const [newDiscussionTags, setNewDiscussionTags] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{type:'success'|'error', message: string} | null>(null);
+  const [currentFilter, setCurrentFilter] = useState<'all' | 'my-posts' | 'my-comments'>( filterParam === 'my-posts' ? 'my-posts' : filterParam === 'my-comments' ? 'my-comments' : 'all' );
+  const isLoading = isLanguageLoading || authLoading;
+  const isMobile = useMediaQuery("(max-width: 1023px)");
+  const canPostOrComment = !!(user && user.emailVerified);
+  const MAX_FILE_SIZE_MB = 25;
+  const MAX_TOTAL_FILES = 3;
 
-    useEffect(() => {
-        let filtered = [...mockDiscussions]; // Start with a fresh copy
-        const query = searchQuery.toLowerCase();
-        if (query) { filtered = filtered.filter(d => d.title.toLowerCase().includes(query) || d.excerpt.toLowerCase().includes(query) || d.tags.some(tag => tag.toLowerCase().includes(query))); }
-        if (activeTab !== "all") { filtered = filtered.filter(d => d.category === activeTab); }
-        if (selectedTags.length > 0) { filtered = filtered.filter(d => d.tags.some(tag => selectedTags.includes(tag))); }
-        if (sortBy === "recent") { filtered.sort((a, b) => { const parseDate = (ds: string) => { if (ds === "Just now") return Date.now(); if (ds.includes("day")) return Date.now() - parseInt(ds) * 86400000; if (ds.includes("week")) return Date.now() - parseInt(ds) * 604800000; return 0; }; return parseDate(b.date) - parseDate(a.date); }); } // Corrected sort: newest first
-        else if (sortBy === "popular") { filtered.sort((a, b) => b.likes - a.likes); }
-        setFilteredDiscussions(filtered); // Set the final filtered list
-    }, [searchQuery, activeTab, selectedTags, sortBy]); // Re-run when filters change
+  useEffect(() => {
+    const newFilter = searchParams?.get('filter');
+    setCurrentFilter(newFilter === 'my-posts' ? 'my-posts' : newFilter === 'my-comments' ? 'my-comments' : 'all');
+  }, [searchParams]);
+
+  const fetchAndSetDiscussions = useCallback((querySnapshot: any) => {
+      let fetchedDiscussions = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as Discussion));
+      const queryLower = searchQuery.toLowerCase().trim();
+      if (queryLower) {
+          fetchedDiscussions = fetchedDiscussions.filter((d: Discussion) =>
+              d.title.toLowerCase().includes(queryLower) ||
+              (d.excerpt ?? "").toLowerCase().includes(queryLower) ||
+              (d.tags ?? []).some((tag: string) => tag.toLowerCase().includes(queryLower))
+          );
+      }
+      if (selectedTags.length > 0) {
+          fetchedDiscussions = fetchedDiscussions.filter((d: Discussion) =>
+              (d.tags ?? []).some((tag: string) => selectedTags.includes(tag))
+          );
+      }
+       fetchedDiscussions = fetchedDiscussions.filter((d: Discussion) => !d.isHidden || d.authorId === user?.uid);
+      setDiscussions(fetchedDiscussions);
+      setIsFetchingDiscussions(false);
+      setFetchError(null);
+  }, [searchQuery, selectedTags, user?.uid]);
 
 
-  const handleSearch = () => { /* Logic moved to useEffect */ };
-  const handleTabChange = (value: string) => { setActiveTab(value); };
-  const toggleTag = (tag: string) => { setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]); setShowFilters(false); };
-  const toggleNewDiscussionTag = (tag: string) => { setNewDiscussionTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]); };
-  const applyFilters = () => { setShowFilters(false); /* Logic moved to useEffect */ };
+  useEffect(() => {
+    setIsFetchingDiscussions(true);
+    setFetchError(null);
+    let unsubscribe = () => {};
+    try {
+        const constraints: QueryConstraint[] = [];
+        let q: any;
+        if (currentFilter === 'my-posts' && user?.uid) {
+            constraints.push(where("authorId", "==", user.uid));
+            if (sortBy === 'popular') {
+                constraints.push(orderBy("likeCount", "desc"));
+            }
+            constraints.push(orderBy("createdAt", "desc"));
+            constraints.push(limit(50));
+            q = query(collection(db, "discussions"), ...constraints);
+        } else if (currentFilter === 'my-comments' && user?.uid) {
+            const fetchCommentedDiscussions = async () => {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    const commentedIds = userData.commentedOnDiscussionIds as string[] || [];
+                    if (commentedIds.length > 0) {
+                        const discussionIdsToFetch = commentedIds.slice(0, 30);
+                        const commentedConstraints: QueryConstraint[] = [where(documentId(), 'in', discussionIdsToFetch)];
+                        const commentedQuery = query(collection(db, "discussions"), ...commentedConstraints);
+                        const querySnapshot = await getDocs(commentedQuery);
+                        let fetched = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Discussion));
+                         fetched = fetched.filter((d: Discussion) => !d.isHidden || d.authorId === user?.uid);
+                        fetched.sort((a, b) => (b.lastUpdatedAt || b.createdAt).toMillis() - (a.lastUpdatedAt || a.createdAt).toMillis());
+                        setDiscussions(fetched);
+                        setIsFetchingDiscussions(false);
+                         setFetchError(null);
+                    } else {
+                        setDiscussions([]);
+                        setIsFetchingDiscussions(false);
+                    }
+                } else {
+                    setDiscussions([]);
+                    setIsFetchingDiscussions(false);
+                    setFetchError(t("community.noUserCommentData"));
+                }
+            };
+            fetchCommentedDiscussions().catch(err => {
+                 console.error("Error fetching commented discussions:", err);
+                 setFetchError(t("community.fetchError"));
+                 setIsFetchingDiscussions(false);
+             });
+            return;
 
-  const createNewDiscussion = () => {
-    const newDiscussion = { id: Date.now(), title: newDiscussionTitle, category: newDiscussionCategory as "learning" | "support", author: "You", authorAvatar: "YO", date: "Just now", replies: 0, likes: 0, excerpt: newDiscussionContent.substring(0, 150) + (newDiscussionContent.length > 150 ? "..." : ""), tags: newDiscussionTags };
-    mockDiscussions.unshift(newDiscussion); // Modify mock data directly (in real app, send to API)
-    setFilteredDiscussions([newDiscussion, ...filteredDiscussions]); // Add to displayed list immediately
-    setNewDiscussionTitle(""); setNewDiscussionContent(""); setNewDiscussionCategory(""); setNewDiscussionTags([]);
-    document.getElementById('new-discussion')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+        } else {
+            if (activeTab !== 'all') {
+                constraints.push(where("category", "==", activeTab));
+            }
+            if (sortBy === 'popular') {
+                constraints.push(orderBy("likeCount", "desc"));
+            }
+             constraints.push(orderBy("createdAt", "desc"));
+            constraints.push(limit(50));
+            q = query(collection(db, "discussions"), ...constraints);
+        }
+        unsubscribe = onSnapshot(q, fetchAndSetDiscussions, (error) => {
+            console.error("Error listening to discussions:", error);
+            setFetchError(t("community.fetchError"));
+            setIsFetchingDiscussions(false);
+        });
+    } catch (error) {
+        console.error("Error setting up discussion listener:", error);
+        setFetchError(t("community.fetchError"));
+        setIsFetchingDiscussions(false);
+    }
+    return () => unsubscribe();
+  }, [activeTab, sortBy, fetchAndSetDiscussions, currentFilter, user?.uid, t]);
+
+   const updateDiscussionInList = useCallback((id: string, updates: Partial<Discussion>) => {}, []);
+
+   const handleTabChange = (value: string) => { setActiveTab(value); };
+   const toggleTag = (tag: string) => { setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])); };
+   const toggleNewDiscussionTag = (tag: string) => { setNewDiscussionTags((prev) => prev.length < 5 && !prev.includes(tag) ? [...prev, tag] : prev.filter((t) => t !== tag) ); };
+   const handleFilterChange = (filter: 'all' | 'my-posts' | 'my-comments') => { setCurrentFilter(filter); const newSearchParams = new URLSearchParams(searchParams?.toString() ?? ""); if (filter === 'my-posts' || filter === 'my-comments') { newSearchParams.set('filter', filter); } else { newSearchParams.delete('filter'); } router.push(`${window.location.pathname}?${newSearchParams.toString()}`, { scroll: false }); };
+   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => { setSubmitStatus(null); if (event.target.files) { const files = event.target.files; if (files.length > MAX_TOTAL_FILES) { setSubmitStatus({type: 'error', message: t("community.fileCountError")! }); event.target.value = ''; setSelectedFiles(null); setTimeout(() => setSubmitStatus(null), 5000); return; } let oversizedFiles = []; for (let i = 0; i < files.length; i++) { if (files[i].size > MAX_FILE_SIZE_MB * 1024 * 1024) { oversizedFiles.push(files[i].name); } } if (oversizedFiles.length > 0) { setSubmitStatus({type: 'error', message: `${t("community.fileSizeError")} (${oversizedFiles.join(', ')})` }); event.target.value = ''; setSelectedFiles(null); setTimeout(() => setSubmitStatus(null), 5000); return; } setSelectedFiles(files); } else { setSelectedFiles(null); } };
+
+   const createNewDiscussion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!canPostOrComment || !newDiscussionTitle || !newDiscussionContent || !newDiscussionCategory) {
+            setSubmitStatus({ type: 'error', message: canPostOrComment ? 'Please fill in all required fields.' : t("community.loginToPost")! });
+            setTimeout(() => setSubmitStatus(null), 4000);
+            return;
+        }
+        if (!user) {
+            setSubmitStatus({ type: 'error', message: 'User data not loaded, please wait.' });
+            setTimeout(() => setSubmitStatus(null), 4000);
+            return;
+        }
+        setIsSubmitting(true);
+        setIsUploadingMedia(!!selectedFiles && selectedFiles.length > 0);
+        setUploadProgress(0);
+        setSubmitStatus(null);
+        let discussionDocRef;
+        let newDiscussionId = '';
+        let mediaUrls: string[] = [];
+        let uploadErrorOccurred = false;
+        try {
+            const authorName = user.displayName || "Anonymous User";
+            const authorInitials = (authorName).substring(0, 2).toUpperCase();
+            const authorPhotoURL = user.photoURL ?? null;
+            const discussionDataPlaceholder = {
+                title: newDiscussionTitle.trim(),
+                category: newDiscussionCategory,
+                content: newDiscussionContent.trim(),
+                excerpt: newDiscussionContent.trim().substring(0, 150) + (newDiscussionContent.trim().length > 150 ? "..." : ""),
+                tags: newDiscussionTags,
+                authorId: user.uid,
+                authorName: authorName,
+                authorInitials: authorInitials,
+                authorPhotoURL: authorPhotoURL,
+                createdAt: serverTimestamp(),
+                likeCount: 0,
+                replyCount: 0,
+                likedBy: [],
+                mediaURLs: [],
+                moderationStatus: 'PENDING',
+                textModerationStatus: 'PENDING',
+                isHidden: true
+            };
+            discussionDocRef = await addDoc(collection(db, "discussions"), discussionDataPlaceholder);
+            newDiscussionId = discussionDocRef.id;
+            if (selectedFiles && selectedFiles.length > 0) {
+                 setIsUploadingMedia(true);
+                 const uploadPromises = Array.from(selectedFiles).map(file => {
+                    const fileMetadata = { contentType: file.type, customMetadata: { discussionId: newDiscussionId } };
+                    const storageRef = ref(storage, `discussionsMedia/${user.uid}/${newDiscussionId}_${Date.now()}_${file.name}`);
+                    const uploadTask = uploadBytesResumable(storageRef, file, fileMetadata);
+                    return new Promise<string>((resolve, reject) => {
+                        uploadTask.on('state_changed',
+                            (snapshot) => { setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100); },
+                            (error) => { console.error("Upload failed for file:", file.name, error); reject(error); },
+                            async () => { try { const downloadURL = await getDownloadURL(uploadTask.snapshot.ref); resolve(downloadURL); } catch (urlError) { reject(urlError); } }
+                        );
+                    });
+                 });
+                 try {
+                    const urls = await Promise.all(uploadPromises);
+                    mediaUrls.push(...urls);
+                    await updateDoc(discussionDocRef, { mediaURLs: mediaUrls });
+                 } catch (uploadError: unknown) {
+                    uploadErrorOccurred = true;
+                    console.error("One or more media uploads failed:", uploadError);
+                    let errorMsg = t("community.mediaUploadError")!;
+                    if (typeof uploadError === 'object' && uploadError !== null && 'code' in uploadError) {
+                        const code = (uploadError as { code: string }).code;
+                        if (code === 'storage/unauthorized') { errorMsg = `Upload failed: File might be too large (max ${MAX_FILE_SIZE_MB}MB) or you lack permission.`; }
+                         else if (code === 'storage/canceled') { errorMsg = 'Upload canceled.'; }
+                    }
+                    setSubmitStatus({ type: 'error', message: errorMsg });
+                    console.warn("Upload failed, attempting to remove placeholder document.");
+                     await deleteDoc(discussionDocRef);
+                 } finally {
+                     setIsUploadingMedia(false);
+                     setUploadProgress(0);
+                 }
+            }
+             if (uploadErrorOccurred) {
+                 setIsSubmitting(false);
+                 setTimeout(() => setSubmitStatus(null), 5000);
+                 return;
+             }
+            setSubmitStatus({ type: 'success', message: t("community.newDiscussion.success")! });
+            setNewDiscussionTitle("");
+            setNewDiscussionContent("");
+            setNewDiscussionCategory("");
+            setNewDiscussionTags([]);
+            setSelectedFiles(null);
+            if(fileInputRef.current) fileInputRef.current.value = "";
+        } catch (error) {
+            console.error("Error during discussion creation process:", error);
+            setSubmitStatus({ type: 'error', message: t("community.newDiscussion.error")! });
+             if (discussionDocRef && !uploadErrorOccurred) {
+                try {
+                     await deleteDoc(discussionDocRef);
+                     console.log("Deleted placeholder discussion doc due to creation error after potential media stage.")
+                } catch (deleteErr) {
+                     console.error("Failed to delete placeholder doc after creation error:", deleteErr);
+                }
+             }
+        } finally {
+            setIsSubmitting(false);
+            setIsUploadingMedia(false);
+            setUploadProgress(0);
+            setTimeout(() => setSubmitStatus(null), 5000);
+        }
+    };
+
+
+   if (isLoading) {
+        return (
+            <div className="min-h-[80vh] flex flex-col items-center justify-center content-bg-1">
+                <LoadingSpinner size="lg" />
+                <p className="mt-4 text-gray-600"><span suppressHydrationWarning>{t("common.loading")}</span></p>
+            </div>
+        );
+   }
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="section-padding hero-bg">
-        <div className="container px-4 md:px-6 relative max-w-screen-xl mx-auto">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="space-y-2">
-              <h1 className="heading-1 gradient-text-hero">
-                {isLoading ? fallbacks.title : <span suppressHydrationWarning>{t("community.title") ?? fallbacks.title}</span>}
-              </h1>
-              <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed">
-                {isLoading ? fallbacks.subtitle : <span suppressHydrationWarning>{t("community.subtitle") ?? fallbacks.subtitle}</span>}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Content Section (Discussions List + Filters) */}
-      <section className="section-padding content-bg-1">
-        <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
-            {/* Sidebar (Filters, Join) */}
-            <div className="lg:col-span-1 space-y-6 min-w-0">
-              <Card className="card-standard glass-card-content">
-                <CardHeader className="pb-3">
-                  <CardTitle>
-                    {isLoading ? fallbacks.sidebarJoinTitle : <span suppressHydrationWarning>{t("community.sidebar.join.title") ?? fallbacks.sidebarJoinTitle}</span>}
-                  </CardTitle>
-                  <CardDescription>
-                    {isLoading ? fallbacks.sidebarJoinDesc : <span suppressHydrationWarning>{t("community.sidebar.join.description") ?? fallbacks.sidebarJoinDesc}</span>}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full btn-gradient mb-4" onClick={() => document.getElementById('new-discussion')?.scrollIntoView({ behavior: 'smooth' })}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    {isLoading ? fallbacks.sidebarJoinButton : <span suppressHydrationWarning>{t("community.sidebar.join.button") ?? fallbacks.sidebarJoinButton}</span>}
-                  </Button>
+      <section className="section-padding hero-bg py-6 sm:py-8 md:py-12">
+          <div className="container px-4 md:px-6 relative max-w-screen-xl mx-auto">
+              <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 text-center">
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">
-                      {isLoading ? fallbacks.sidebarTagsTitle : <span suppressHydrationWarning>{t("community.sidebar.tags.title") ?? fallbacks.sidebarTagsTitle}</span>}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {["Beginner", "Practice", "Resources", "Teaching", "Community"].map((tag) => (
-                        <Button
-                          key={tag}
-                          variant="outline"
-                          size="sm"
-                          className={cn("text-xs rounded-full", selectedTags.includes(tag) && "bg-primary/10 border-primary text-primary")}
-                          onClick={() => toggleTag(tag)}
-                        >
-                          {tag}
-                        </Button>
-                      ))}
+                      <h1 className="heading-1 gradient-text-hero text-3xl sm:text-4xl md:text-5xl"> <span suppressHydrationWarning>{t("community.title")}</span> </h1>
+                      <p className="max-w-[700px] text-muted-foreground text-sm sm:text-base md:text-xl/relaxed"> <span suppressHydrationWarning>{t("community.subtitle")}</span> </p>
+                  </div>
+              </div>
+          </div>
+      </section>
+      <section className="section-padding content-bg-1 py-6 sm:py-8 md:py-12">
+          <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
+              <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-4">
+                 {isMobile && ( <div className="lg:hidden mb-2"> <Button variant="outline" className="w-full flex items-center justify-center gap-2 rounded-lg" onClick={() => setIsMobileSidebarOpen(true)}> <Menu className="h-4 w-4" /> <span suppressHydrationWarning>{t("community.showSidebar")}</span> </Button> </div> )}
+                 <Sidebar isLoading={isLoading} t={t} selectedTags={selectedTags} toggleTag={toggleTag} isMobileSidebarOpen={isMobileSidebarOpen} setIsMobileSidebarOpen={setIsMobileSidebarOpen} allTags={allTags} />
+                 <div className="lg:col-span-3 space-y-4 sm:space-y-6 min-w-0" id="discussion-list-top">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                        <div className="relative flex-grow"> <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /> <Input ref={searchInputRef} placeholder={ t("community.searchPlaceholder") } className="pl-10 rounded-lg h-10 w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /> </div>
+                        <div className="flex gap-2 justify-end sm:justify-start flex-shrink-0"> <div className="relative"> <Button variant="outline" className="flex items-center gap-2 h-10 px-4 rounded-lg" onClick={() => setShowFilters(!showFilters)}> <Filter className="h-4 w-4" /> <span className="hidden xs:inline"><span suppressHydrationWarning>{t("common.filter")}</span></span> </Button> {showFilters && ( <Card className="absolute right-0 mt-2 w-64 z-20 p-4 shadow-lg bg-popover border"> <div className="space-y-4"> <div className="space-y-2"> <h3 className="text-sm font-medium"><span suppressHydrationWarning>{t("common.sortBy")}</span></h3> <div className="grid grid-cols-2 gap-2"> <Button variant="outline" size="sm" className={cn("text-xs", sortBy === "recent" && "bg-primary/10 border-primary text-primary")} onClick={() => { setSortBy("recent"); setShowFilters(false); }}><span suppressHydrationWarning>{t("common.mostRecent")}</span></Button> <Button variant="outline" size="sm" className={cn("text-xs", sortBy === "popular" && "bg-primary/10 border-primary text-primary")} onClick={() => { setSortBy("popular"); setShowFilters(false); }}><span suppressHydrationWarning>{t("common.mostPopular")}</span></Button> </div> </div> <div className="space-y-2"> <h3 className="text-sm font-medium"><span suppressHydrationWarning>{t("common.filterByTags")}</span></h3> <div className="flex flex-wrap gap-2"> {allTags.map((tag) => ( <Button key={tag} variant={selectedTags.includes(tag) ? "secondary" : "outline"} size="sm" className={cn("text-xs rounded-full h-7 px-2.5")} onClick={() => toggleTag(tag)}> {tag} </Button> ))} </div> </div> </div> </Card> )} </div> </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="card-standard glass-card-content">
-                <CardHeader className="pb-3">
-                  <CardTitle>
-                    {isLoading ? fallbacks.sidebarAccessTitle : <span suppressHydrationWarning>{t("community.sidebar.accessibility.title") ?? fallbacks.sidebarAccessTitle}</span>}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">High Contrast</span>
-                    <Button variant="outline" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Text-to-Speech</span>
-                    <Button variant="outline" size="icon" className="h-8 w-8"><Volume2 className="h-4 w-4" /></Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Font Size</span>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" className="h-8 w-8 p-0">A-</Button>
-                      <Button variant="outline" size="sm" className="h-8 w-8 p-0">A+</Button>
+                    <div className="flex border-b">
+                         <button onClick={() => handleFilterChange('all')} className={cn( "py-2 px-4 text-sm font-medium transition-colors", currentFilter === 'all' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground' )}> <span suppressHydrationWarning>{t("community.tabs.all")}</span> </button>
+                         {user && ( <> <button onClick={() => handleFilterChange('my-posts')} className={cn( "py-2 px-4 text-sm font-medium transition-colors", currentFilter === 'my-posts' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground' )}> <span suppressHydrationWarning>{t("community.myPosts")}</span> </button> <button onClick={() => handleFilterChange('my-comments')} className={cn( "py-2 px-4 text-sm font-medium transition-colors", currentFilter === 'my-comments' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground' )}> <span suppressHydrationWarning>{t("community.myComments")}</span> </button> </> )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Discussion List */}
-            <div className="lg:col-span-3 space-y-6 min-w-0">
-              {/* Search and Filter Bar */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-grow">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input ref={searchInputRef} placeholder={isLoading ? fallbacks.searchPlaceholder : t("community.searchPlaceholder") ?? fallbacks.searchPlaceholder} className="pl-10 rounded-lg" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} />
-                </div>
-                <Button onClick={handleSearch} className="btn-gradient">{isLoading ? fallbacks.search : <span suppressHydrationWarning>{t("common.search") ?? fallbacks.search}</span>}</Button>
-                <div className="relative">
-                   <Button variant="outline" className="flex items-center gap-2" onClick={() => setShowFilters(!showFilters)}><Filter className="h-4 w-4" />{isLoading ? fallbacks.filter : <span suppressHydrationWarning>{t("common.filter") ?? fallbacks.filter}</span>}</Button>
-                   {showFilters && (
-                     <Card className="absolute right-0 mt-2 w-64 z-10 p-4 shadow-lg bg-popover border">
-                       <div className="space-y-4">
-                         <div className="space-y-2"><h3 className="text-sm font-medium">{isLoading ? fallbacks.sortBy : <span suppressHydrationWarning>{t("common.sortBy") ?? fallbacks.sortBy}</span>}</h3><div className="grid grid-cols-2 gap-2"><Button variant="outline" size="sm" className={cn("text-xs", sortBy === "recent" && "bg-primary/10 border-primary")} onClick={() => setSortBy("recent")}>{isLoading ? fallbacks.mostRecent : <span suppressHydrationWarning>{t("common.mostRecent") ?? fallbacks.mostRecent}</span>}</Button><Button variant="outline" size="sm" className={cn("text-xs", sortBy === "popular" && "bg-primary/10 border-primary")} onClick={() => setSortBy("popular")}>{isLoading ? fallbacks.mostPopular : <span suppressHydrationWarning>{t("common.mostPopular") ?? fallbacks.mostPopular}</span>}</Button></div></div>
-                         <div className="space-y-2"><h3 className="text-sm font-medium">{isLoading ? fallbacks.filterByTags : <span suppressHydrationWarning>{t("common.filterByTags") ?? fallbacks.filterByTags}</span>}</h3><div className="flex flex-wrap gap-2">{["Beginner", "Intermediate", "Advanced", "Practice", "Resources"].map((tag) => ( <Button key={tag} variant="outline" size="sm" className={cn("text-xs rounded-full", selectedTags.includes(tag) && "bg-primary/10 border-primary")} onClick={() => toggleTag(tag)}>{tag}</Button> ))}</div></div>
-                         <Button className="w-full btn-gradient text-xs" onClick={applyFilters}>{isLoading ? fallbacks.applyFilters : <span suppressHydrationWarning>{t("common.applyFilters") ?? fallbacks.applyFilters}</span>}</Button>
-                       </div>
-                     </Card>
-                   )}
+                    {currentFilter === 'all' && ( <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full pt-4"> <TabsList className="grid grid-cols-3 mb-4 sm:mb-6 w-full sm:w-auto sm:inline-grid"> <TabsTrigger value="all" className="rounded-lg truncate text-xs sm:text-sm py-1.5 sm:py-2"><span suppressHydrationWarning>{t("community.tabs.all")}</span></TabsTrigger> <TabsTrigger value="learning" className="rounded-lg truncate text-xs sm:text-sm py-1.5 sm:py-2"><span suppressHydrationWarning>{t("community.tabs.learning")}</span></TabsTrigger> <TabsTrigger value="support" className="rounded-lg truncate text-xs sm:text-sm py-1.5 sm:py-2"><span suppressHydrationWarning>{t("community.tabs.support")}</span></TabsTrigger> </TabsList> </Tabs> )}
+                    <div className="space-y-4 mt-0">
+                        {isFetchingDiscussions ? ( <div className="text-center py-12"><LoadingSpinner size="md" /></div> ) :
+                         fetchError ? ( <Alert variant="destructive" className="text-sm"> <AlertCircle className="h-4 w-4" /> <AlertTitle>{t('common.errorTitle')}</AlertTitle> <AlertDescription>{fetchError}</AlertDescription> </Alert> ) :
+                         discussions.length > 0 ? ( discussions.map((discussion) => (<DiscussionCard key={discussion.id} discussion={discussion} t={t} user={user} refetchDiscussions={() => {}} updateDiscussionInList={updateDiscussionInList} />)) ) :
+                         ( <div className="text-center py-8 sm:py-12"> <MessageSquare className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-4" /> <h3 className="text-base sm:text-lg font-medium"><span suppressHydrationWarning>{t(currentFilter === 'my-comments' ? "community.noCommentedPosts" : "community.noDiscussions.title")}</span></h3> <p className="text-sm text-muted-foreground"><span suppressHydrationWarning>{t("community.noDiscussions.description")}</span></p> </div> )}
+                    </div>
                  </div>
               </div>
-
-              {/* Tabs */}
-              <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className="grid grid-cols-3 mb-6 min-w-0">
-                  <TabsTrigger value="all" className="rounded-lg truncate">{isLoading ? fallbacks.tabsAll : <span suppressHydrationWarning>{t("community.tabs.all") ?? fallbacks.tabsAll}</span>}</TabsTrigger>
-                  <TabsTrigger value="learning" className="rounded-lg truncate">{isLoading ? fallbacks.tabsLearning : <span suppressHydrationWarning>{t("community.tabs.learning") ?? fallbacks.tabsLearning}</span>}</TabsTrigger>
-                  <TabsTrigger value="support" className="rounded-lg truncate">{isLoading ? fallbacks.tabsSupport : <span suppressHydrationWarning>{t("community.tabs.support") ?? fallbacks.tabsSupport}</span>}</TabsTrigger>
-                </TabsList>
-                {/* Tab Content */}
-                <TabsContent value="all" className="space-y-4">
-                  {filteredDiscussions.length > 0 ? filteredDiscussions.map((discussion) => (<DiscussionCard key={discussion.id} discussion={discussion} />)) : (<div className="text-center py-12"><MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" /><h3 className="text-lg font-medium">{isLoading ? fallbacks.noDiscussionsTitle : <span suppressHydrationWarning>{t("community.noDiscussions.title") ?? fallbacks.noDiscussionsTitle}</span>}</h3><p className="text-muted-foreground">{isLoading ? fallbacks.noDiscussionsDesc : <span suppressHydrationWarning>{t("community.noDiscussions.description") ?? fallbacks.noDiscussionsDesc}</span>}</p></div>)}
-                </TabsContent>
-                <TabsContent value="learning" className="space-y-4">
-                   {filteredDiscussions.filter(d => d.category === 'learning').length > 0 ? filteredDiscussions.filter(d => d.category === 'learning').map((discussion) => (<DiscussionCard key={discussion.id} discussion={discussion} />)) : (<div className="text-center py-12"><BookOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" /><h3 className="text-lg font-medium">{isLoading ? fallbacks.noLearningTitle : <span suppressHydrationWarning>{t("community.noLearning.title") ?? fallbacks.noLearningTitle}</span>}</h3><p className="text-muted-foreground">{isLoading ? fallbacks.noLearningDesc : <span suppressHydrationWarning>{t("community.noLearning.description") ?? fallbacks.noLearningDesc}</span>}</p></div>)}
-                </TabsContent>
-                <TabsContent value="support" className="space-y-4">
-                   {filteredDiscussions.filter(d => d.category === 'support').length > 0 ? filteredDiscussions.filter(d => d.category === 'support').map((discussion) => (<DiscussionCard key={discussion.id} discussion={discussion} />)) : (<div className="text-center py-12"><Users className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" /><h3 className="text-lg font-medium">{isLoading ? fallbacks.noSupportTitle : <span suppressHydrationWarning>{t("community.noSupport.title") ?? fallbacks.noSupportTitle}</span>}</h3><p className="text-muted-foreground">{isLoading ? fallbacks.noSupportDesc : <span suppressHydrationWarning>{t("community.noSupport.description") ?? fallbacks.noSupportDesc}</span>}</p></div>)}
-                </TabsContent>
-              </Tabs>
-
-              {/* Pagination (Example) */}
-              {filteredDiscussions.length > 5 && (
-                <div className="flex justify-center mt-8">
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled>{isLoading ? fallbacks.previous : <span suppressHydrationWarning>{t("common.previous") ?? fallbacks.previous}</span>}</Button>
-                    <Button variant="outline" size="sm" className="w-8 h-8 p-0 bg-accent">1</Button>
-                    <Button variant="outline" size="sm"> {isLoading ? fallbacks.next : <span suppressHydrationWarning>{t("common.next") ?? fallbacks.next}</span>}</Button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
-        </div>
       </section>
-
-      {/* New Discussion Form Section */}
-      <section id="new-discussion" className="section-padding content-bg-2">
-        <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
-             {/* Guidelines Sidebar (now static) */}
-            <div className="lg:col-span-1 min-w-0">
-              <Card className="card-standard glass-card-content">
-                <CardHeader>
-                  <CardTitle>
-                    {isLoading ? fallbacks.newDiscussionSidebarTitle : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.title") ?? fallbacks.newDiscussionSidebarTitle}</span>}
-                  </CardTitle>
-                  <CardDescription>
-                    {isLoading ? fallbacks.newDiscussionSidebarDesc : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.description") ?? fallbacks.newDiscussionSidebarDesc}</span>}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p>
-                    {isLoading ? fallbacks.newDiscussionSidebarGuideTitle : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guidelinesTitle") ?? fallbacks.newDiscussionSidebarGuideTitle}</span>}
-                  </p>
-                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                    <li>
-                      {isLoading ? fallbacks.newDiscussionSidebarGuide1 : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline1") ?? fallbacks.newDiscussionSidebarGuide1}</span>}
-                    </li>
-                    <li>
-                      {isLoading ? fallbacks.newDiscussionSidebarGuide2 : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline2") ?? fallbacks.newDiscussionSidebarGuide2}</span>}
-                    </li>
-                    <li>
-                      {isLoading ? fallbacks.newDiscussionSidebarGuide3 : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline3") ?? fallbacks.newDiscussionSidebarGuide3}</span>}
-                    </li>
-                    <li>
-                      {isLoading ? fallbacks.newDiscussionSidebarGuide4 : <span suppressHydrationWarning>{t("community.newDiscussion.sidebar.guideline4") ?? fallbacks.newDiscussionSidebarGuide4}</span>}
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-             {/* New Discussion Form */}
-            <div className="lg:col-span-3 min-w-0">
-              <Card className="card-standard glass-card-content">
-                <CardHeader>
-                  <CardTitle>
-                    {isLoading ? fallbacks.newDiscussionFormTitle : <span suppressHydrationWarning>{t("community.newDiscussion.form.title") ?? fallbacks.newDiscussionFormTitle}</span>}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="discussion-title" className="text-sm font-medium break-words truncate w-full">
-                      {isLoading ? fallbacks.newDiscussionFormTitleLabel : <span suppressHydrationWarning>{t("community.newDiscussion.form.titleLabel") ?? fallbacks.newDiscussionFormTitleLabel}</span>}
-                    </label>
-                    <Input
-                      id="discussion-title"
-                      placeholder={isLoading ? fallbacks.newDiscussionFormTitlePlaceholder : t("community.newDiscussion.form.titlePlaceholder") ?? fallbacks.newDiscussionFormTitlePlaceholder}
-                      value={newDiscussionTitle}
-                      onChange={(e) => setNewDiscussionTitle(e.target.value)}
-                      className="break-words w-full"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="discussion-category" className="text-sm font-medium break-words truncate w-full">
-                      {isLoading ? fallbacks.newDiscussionFormCatLabel : <span suppressHydrationWarning>{t("community.newDiscussion.form.categoryLabel") ?? fallbacks.newDiscussionFormCatLabel}</span>}
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        className={cn("text-sm justify-start", newDiscussionCategory === "learning" && "bg-primary/10 border-primary")}
-                        onClick={() => setNewDiscussionCategory("learning")}
-                      >
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        {isLoading ? fallbacks.newDiscussionFormCatLearning : <span suppressHydrationWarning>{t("community.newDiscussion.form.categoryLearning") ?? fallbacks.newDiscussionFormCatLearning}</span>}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className={cn("text-sm justify-start", newDiscussionCategory === "support" && "bg-primary/10 border-primary")}
-                        onClick={() => setNewDiscussionCategory("support")}
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        {isLoading ? fallbacks.newDiscussionFormCatSupport : <span suppressHydrationWarning>{t("community.newDiscussion.form.categorySupport") ?? fallbacks.newDiscussionFormCatSupport}</span>}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="discussion-content" className="text-sm font-medium break-words truncate w-full">
-                      {isLoading ? fallbacks.newDiscussionFormContentLabel : <span suppressHydrationWarning>{t("community.newDiscussion.form.contentLabel") ?? fallbacks.newDiscussionFormContentLabel}</span>}
-                    </label>
-                    <Textarea
-                      id="discussion-content"
-                      placeholder={isLoading ? fallbacks.newDiscussionFormContentPlaceholder : t("community.newDiscussion.form.contentPlaceholder") ?? fallbacks.newDiscussionFormContentPlaceholder}
-                      className="min-h-[200px] break-words w-full"
-                      value={newDiscussionContent}
-                      onChange={(e) => setNewDiscussionContent(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium break-words truncate w-full">
-                      {isLoading ? fallbacks.newDiscussionFormTagsLabel : <span suppressHydrationWarning>{t("community.newDiscussion.form.tagsLabel") ?? fallbacks.newDiscussionFormTagsLabel}</span>}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {["Beginner", "Intermediate", "Advanced", "Practice", "Resources", "Teaching", "Community"].map((tag) => (
-                        <Button
-                          key={tag}
-                          variant="outline"
-                          size="sm"
-                          className={cn("text-xs rounded-full", newDiscussionTags.includes(tag) && "bg-primary/10 border-primary")}
-                          onClick={() => toggleNewDiscussionTag(tag)}
-                        >
-                          {tag}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline">
-                    {isLoading ? fallbacks.cancel : <span suppressHydrationWarning>{t("common.cancel") ?? fallbacks.cancel}</span>}
-                  </Button>
-                  <Button
-                    className="btn-gradient"
-                    onClick={createNewDiscussion}
-                    disabled={!newDiscussionTitle || !newDiscussionContent || !newDiscussionCategory || newDiscussionTags.length === 0}
-                  >
-                    {isLoading ? fallbacks.newDiscussionFormSubmit : <span suppressHydrationWarning>{t("community.newDiscussion.form.submitButton") ?? fallbacks.newDiscussionFormSubmit}</span>}
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action Section */}
-      <section className="section-padding cta-bg">
-        <div className="container px-4 md:px-6 relative max-w-screen-xl mx-auto">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="space-y-2 max-w-3xl">
-              <h2 className="heading-2 text-white">
-                {isLoading ? fallbacks.ctaTitle : <span suppressHydrationWarning>{t("community.cta.title") ?? fallbacks.ctaTitle}</span>}
-              </h2>
-              <p className="max-w-[900px] text-white/80 md:text-xl/relaxed">
-                {isLoading ? fallbacks.ctaDesc : <span suppressHydrationWarning>{t("community.cta.description") ?? fallbacks.ctaDesc}</span>}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-                <Link href="/sign-up" scroll={true}>
-                  <Button size="lg" className="btn-gradient">
-                    {isLoading ? fallbacks.ctaButton1 : <span suppressHydrationWarning>{t("community.cta.button1") ?? fallbacks.ctaButton1}</span>}
-                  </Button>
-                </Link>
-                <Link href="/sign-in" scroll={true}>
-                  <Button variant="outline" size="lg" className="btn-outline prismatic-glow">
-                    {isLoading ? fallbacks.ctaButton2 : <span suppressHydrationWarning>{t("community.cta.button2") ?? fallbacks.ctaButton2}</span>}
-                  </Button>
-                </Link>
+      <section id="new-discussion" className="section-padding content-bg-2 py-6 sm:py-8 md:py-12 scroll-mt-16">
+          <div className="container px-4 md:px-6 max-w-screen-xl mx-auto">
+              <div className="lg:hidden mb-6"> <GuidelinesCard t={t} /> </div>
+              <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-4">
+                 <div className="lg:col-span-1 min-w-0 hidden lg:block"> <GuidelinesCard t={t} /> </div>
+                 <div className="lg:col-span-3 min-w-0">
+                    {canPostOrComment ? (
+                        <form onSubmit={createNewDiscussion}>
+                            <Card className="card-standard glass-card-content">
+                                <CardHeader className="p-4 sm:p-6"> <CardTitle className="text-base sm:text-lg"><span suppressHydrationWarning>{t("community.newDiscussion.form.title")}</span></CardTitle> </CardHeader>
+                                <CardContent className="space-y-4 px-4 sm:px-6">
+                                    {submitStatus && <Alert variant={submitStatus.type === 'success' ? 'default' : 'destructive'} className="text-sm"><AlertTitle>{submitStatus.type === 'success' ? t('common.successTitle') : t('common.errorTitle')}</AlertTitle><AlertDescription>{submitStatus.message}</AlertDescription></Alert>}
+                                    <div className="space-y-2"> <label htmlFor="discussion-title" className="text-sm font-medium"><span suppressHydrationWarning>{t("community.newDiscussion.form.titleLabel")}</span></label> <Input id="discussion-title" placeholder={ t("community.newDiscussion.form.titlePlaceholder") } value={newDiscussionTitle} onChange={(e) => setNewDiscussionTitle(e.target.value)} required disabled={isSubmitting || isUploadingMedia} /> </div>
+                                    <div className="space-y-2"> <label className="text-sm font-medium"><span suppressHydrationWarning>{t("community.newDiscussion.form.categoryLabel")}</span></label> <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"> <Button type="button" variant="outline" className={cn("text-sm justify-center sm:justify-start h-10", newDiscussionCategory === "learning" && "bg-primary/10 border-primary text-primary")} onClick={() => setNewDiscussionCategory("learning")} disabled={isSubmitting || isUploadingMedia}> <BookOpen className="mr-2 h-4 w-4" /> <span suppressHydrationWarning>{t("community.newDiscussion.form.categoryLearning")}</span> </Button> <Button type="button" variant="outline" className={cn("text-sm justify-center sm:justify-start h-10", newDiscussionCategory === "support" && "bg-primary/10 border-primary text-primary")} onClick={() => setNewDiscussionCategory("support")} disabled={isSubmitting || isUploadingMedia}> <Users className="mr-2 h-4 w-4" /> <span suppressHydrationWarning>{t("community.newDiscussion.form.categorySupport")}</span> </Button> </div> </div>
+                                    <div className="space-y-2"> <label htmlFor="discussion-content" className="text-sm font-medium"><span suppressHydrationWarning>{t("community.newDiscussion.form.contentLabel")}</span></label> <Textarea id="discussion-content" placeholder={ t("community.newDiscussion.form.contentPlaceholder") } className="min-h-[150px] resize-none" value={newDiscussionContent} onChange={(e) => setNewDiscussionContent(e.target.value)} required disabled={isSubmitting || isUploadingMedia}/> </div>
+                                    <div className="space-y-2"> <label htmlFor="media-upload" className={cn("text-sm font-medium flex items-center gap-2 cursor-pointer text-blue-600 hover:text-blue-800", (isSubmitting || isUploadingMedia) && "text-muted-foreground hover:text-muted-foreground cursor-not-allowed" )}> <Paperclip className="h-4 w-4" /> <span suppressHydrationWarning>{t("community.attachMediaLabel")}</span> </label> <Input id="media-upload" ref={fileInputRef} type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileSelect} disabled={isSubmitting || isUploadingMedia}/> {selectedFiles && selectedFiles.length > 0 && ( <div className="text-xs text-muted-foreground mt-1 space-y-1"> <span>Selected:</span> {Array.from(selectedFiles).map(file => (<span key={file.name} className="ml-2 inline-block bg-secondary px-1.5 py-0.5 rounded">{file.name}</span>))} </div> )} {isUploadingMedia && ( <div className="space-y-1 pt-2"> <Progress value={uploadProgress} className="h-2" /> <p className="text-xs text-muted-foreground"><span suppressHydrationWarning>{t("community.uploadProgress")}</span> {uploadProgress.toFixed(0)}%</p> </div> )} </div>
+                                    <div className="space-y-2"> <label className="text-sm font-medium"><span suppressHydrationWarning>{t("community.newDiscussion.form.tagsLabel")}</span></label> <div className="flex flex-wrap gap-2"> {allTags.map( (tag) => ( <Button key={tag} type="button" variant={newDiscussionTags.includes(tag) ? "secondary" : "outline"} size="sm" className={cn("text-xs rounded-full h-7 px-2.5")} onClick={() => toggleNewDiscussionTag(tag)} disabled={isSubmitting || isUploadingMedia || (newDiscussionTags.length >= 5 && !newDiscussionTags.includes(tag))}> {tag} </Button> ) )} </div> </div>
+                                </CardContent>
+                                <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 p-4 sm:p-6"> <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => { setNewDiscussionTitle(''); setNewDiscussionContent(''); setNewDiscussionCategory(''); setNewDiscussionTags([]); setSelectedFiles(null); setSubmitStatus(null); if(fileInputRef.current) fileInputRef.current.value = ""; }} disabled={isSubmitting || isUploadingMedia}> <span suppressHydrationWarning>{t("common.cancel")}</span> </Button> <Button type="submit" className="btn-gradient w-full sm:w-auto" disabled={ isSubmitting || isUploadingMedia || !user || !newDiscussionTitle || !newDiscussionContent || !newDiscussionCategory }> {(isSubmitting || isUploadingMedia) && <LoadingSpinner size="sm" className="mr-2"/>} <span suppressHydrationWarning>{isSubmitting ? t('community.newDiscussion.loading') : t("community.newDiscussion.form.submitButton")}</span> </Button> </CardFooter>
+                            </Card>
+                        </form>
+                    ) : (
+                        <Card className="card-standard glass-card-content text-center p-6 sm:p-8"> <CardHeader> <CardTitle><span suppressHydrationWarning>{t("community.loginToPostTitle")}</span></CardTitle> <CardDescription><span suppressHydrationWarning>{t("community.loginToPost")}</span></CardDescription> </CardHeader> <CardContent> <Link href="/sign-in"> <Button className="btn-gradient"><span suppressHydrationWarning>{t("nav.signin")}</span></Button> </Link> </CardContent> </Card>
+                    )}
+                 </div>
               </div>
-            </div>
           </div>
-        </div>
       </section>
+      {!user && (
+        <section className="section-padding cta-bg py-8 md:py-12">
+            <div className="container px-4 md:px-6 relative max-w-screen-xl mx-auto">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                    <div className="space-y-2 max-w-3xl">
+                         <h2 className="heading-2 text-white text-2xl sm:text-3xl"> <span suppressHydrationWarning>{t("community.cta.title")}</span> </h2>
+                         <p className="max-w-[900px] text-white/80 text-sm sm:text-base md:text-xl/relaxed"> <span suppressHydrationWarning>{t("community.cta.description")}</span> </p>
+                         <div className="flex flex-col xs:flex-row gap-3 justify-center pt-4"> <Link href="/sign-up" scroll={true} className="w-full xs:w-auto"> <Button size="lg" className="btn-gradient w-full"><span suppressHydrationWarning>{t("community.cta.button1")}</span></Button> </Link> <Link href="/sign-in" scroll={true} className="w-full xs:w-auto"> <Button variant="outline" size="lg" className="btn-outline prismatic-glow w-full"><span suppressHydrationWarning>{t("community.cta.button2")}</span></Button> </Link> </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+      )}
     </>
   )
 }

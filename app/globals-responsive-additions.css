@@ -1,0 +1,114 @@
+/* Additional responsive utilities to add to globals.css */
+
+/* Extra small screen breakpoint */
+@media (min-width: 400px) {
+    .xs\:flex-row {
+      flex-direction: row;
+    }
+  
+    .xs\:items-center {
+      align-items: center;
+    }
+  
+    .xs\:justify-between {
+      justify-content: space-between;
+    }
+  
+    .xs\:space-y-0 {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  
+    .xs\:space-x-2 > * + * {
+      margin-left: 0.5rem;
+    }
+  
+    .xs\:w-auto {
+      width: auto;
+    }
+  }
+  
+  /* Improved responsive spacing */
+  @media (max-width: 640px) {
+    .section-padding {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+  
+    .heading-1 {
+      font-size: 1.75rem;
+      line-height: 2.25rem;
+    }
+  
+    .heading-2 {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+  
+    .card-standard {
+      border-radius: 0.5rem;
+    }
+  
+    .glass-card-content {
+      padding: 0.75rem;
+    }
+  }
+  
+  /* Improved image responsiveness */
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  /* Better form element responsiveness */
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+  
+  /* Improved container padding for very small screens */
+  @media (max-width: 350px) {
+    .container {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  
+    .p-4 {
+      padding: 0.75rem;
+    }
+  
+    .px-4 {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+  }
+  
+  /* Ensure buttons don't overflow on small screens */
+  .btn-gradient,
+  .btn-secondary,
+  .btn-outline {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  
+  /* Ensure proper text wrapping */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  a {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+  }
+  
